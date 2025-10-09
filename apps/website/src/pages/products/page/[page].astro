@@ -1,0 +1,135 @@
+---
+import ProductLayouts from "@/layouts/functional-components/product/ProductLayouts";
+import ProductFilters from "@/layouts/functional-components/ProductFilters";
+import ProductLayoutViews from "@/layouts/functional-components/ProductLayoutViews";
+import Base from "@/layouts/Base.astro";
+import config from "@/config/config.json";
+import Pagination from "@/layouts/components/Pagination.astro";
+import {
+  getCollections,
+  getHighestProductPrice,
+  getProducts,
+  getVendors,
+  type PageInfo,
+  getAllProducts,
+} from "@/lib/payload/products";
+import CallToAction from "@/partials/CallToAction.astro";
+import type { Brand, Product, ProductCategory, ProductTag } from "payload_app";
+
+export const prerender = true;
+
+// Generate static paths for all product pages
+export async function getStaticPaths() {
+  try {
+    const { getProducts } = await import("@/lib/payload/products");
+    const result = await getProducts({ cursor: "1" });
+    const maxPages = result.totalPages;
+
+    const paths = [];
+
+    // Generate paths for pages 2 and beyond (page 1 is handled by index.astro)
+    for (let page = 2; page <= maxPages; page++) {
+      paths.push({
+        params: { page: page.toString() },
+      });
+    }
+
+    return paths;
+  } catch (error) {
+    console.error("Error generating static paths for product pages:", error);
+    return [];
+  }
+}
+
+const { page } = Astro.params;
+const currentPage = parseInt(page || "1");
+
+// Fetch paginated products and other data
+const [productsResult, allCategories, allVendors, highestPrice, allProducts] =
+  await Promise.all([
+    getProducts({ cursor: currentPage.toString() }),
+    getCollections(),
+    getVendors(),
+    getHighestProductPrice(),
+    getAllProducts(), // Still need all products for filter counts
+  ]);
+
+const { products, pageInfo, totalPages } = productsResult;
+
+// Calculate counts from all products (for filter counts)
+const vendorsWithCounts = allVendors.map((vendor) => {
+  const count = allProducts.filter(
+    (p) => (p.brand as Brand)?.id === vendor.id,
+  ).length;
+  return { vendor: vendor.name, slug: vendor.slug, productCount: count };
+});
+
+const categoriesWithCounts = allCategories.map((category) => {
+  const count = allProducts.filter(
+    (p) => (p.category as ProductCategory)?.id === category.id,
+  ).length;
+  return { name: category.name, slug: category.slug, productCount: count };
+});
+
+// Extract unique tags from all products
+const tags: ProductTag[] = [
+  ...new Map(
+    allProducts
+      .flatMap((product: Product) => product.tags as ProductTag[])
+      .filter(Boolean)
+      .map((tag: ProductTag) => [tag.id, tag]),
+  ).values(),
+];
+
+const maxPriceData = {
+  amount: highestPrice.toString(),
+  currencyCode: config.shopify.currencyCode,
+};
+
+// totalPages is now provided by the getProducts function from the database
+---
+
+<Base title={`Products - Page ${currentPage}`}>
+  <ProductLayouts
+    categories={categoriesWithCounts as any}
+    vendors={vendorsWithCounts as any}
+    tags={tags}
+    maxPriceData={maxPriceData}
+    client:only="react"
+  />
+
+  <div class="container">
+    <div class="row">
+      <div class="col-3 hidden lg:block -mt-14">
+        <ProductFilters
+          categories={categoriesWithCounts as any}
+          vendors={vendorsWithCounts as any}
+          tags={tags}
+          maxPriceData={maxPriceData!}
+          client:only="react"
+        />
+      </div>
+
+      <ProductLayoutViews
+        initialProducts={products}
+        useClientSideFiltering={false}
+        client:only="react"
+      />
+
+      <!-- Pagination -->
+      {
+        totalPages > 1 && (
+          <div class="col-12 mt-8">
+            <Pagination
+              section="products"
+              currentPage={currentPage}
+              totalPages={totalPages}
+            />
+          </div>
+        )
+      }
+
+      <CallToAction />
+    </div>
+  </div>
+</Base>

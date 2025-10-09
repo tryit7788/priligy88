@@ -1,0 +1,48 @@
+{
+  "site": {
+    "title": "必利勁藥局-提供早洩治療必利勁和壯陽藥|犀利士|樂威壯|威而鋼",
+    "base_url": "https://priligy88.com/",
+    "base_path": "/",
+    "trailing_slash": false,
+    "favicon": "/images/favicon1.png",
+    "logo": "/images/logo1.png",
+    "logo_darkmode": "/images/logo1.png",
+    "logo_width": "150",
+    "logo_height": "33",
+    "logo_text": "必利勁藥局"
+  },
+
+  "settings": {
+    "search": true,
+    "account": false,
+    "sticky_header": true,
+    "theme_switcher": true,
+    "default_theme": "system"
+  },
+
+  "params": {
+    "contact_form_action": "/api/contact",
+    "copyright": "Copyright 2025 © 必利勁藥局"
+  },
+
+  "navigation_button": {
+    "enable": true,
+    "label": "Get Started",
+    "link": ""
+  },
+
+  "metadata": {
+    "meta_author": "必利勁藥局",
+    "meta_image": "/images/logo1.png",
+    "meta_description": "本站銷售壯陽藥，犀利士，威而鋼，樂威壯，必利勁.壯陽藥副作用少價錢便宜。提供超商取件及黑貓貨到付款。"
+  },
+
+  "shopify": {
+    "currencySymbol": "$",
+    "currencyCode": "TWD",
+    "collections": {
+      "hero_slider": "hidden-homepage-carousel",
+      "featured_products": "featured-products"
+    }
+  }
+}

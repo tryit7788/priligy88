@@ -1,0 +1,10 @@
+---
+import Base from "@/layouts/Base.astro";
+import CheckoutContent from "@/functional-components/checkout/CheckoutContent";
+export const prerender = true;
+---
+
+<Base title="Checkout">
+  <CheckoutContent client:load />
+        
+</Base>

@@ -1,0 +1,307 @@
+---
+import Logo from "@/components/Logo.astro";
+import menu from "@/config/menu.json";
+import config from "@/config/config.json";
+import ThemeSwitcher from "@/components/ThemeSwitcher.astro";
+import Cart from "@/functional-components/cart/Cart.astro";
+
+const { settings } = config;
+
+// determine if a menu item is active
+const isMenuItemActive = (url: string) => {
+  const pathname = Astro.url.pathname;
+  if (url === "/") {
+    return pathname === url ? "active" : "";
+  }
+  return pathname.startsWith(url) ? "active" : "";
+};
+
+// determine if any child is active
+const isParentActive = (children: any[]) => {
+  return children.some((child) => isMenuItemActive(child.url));
+};
+---
+
+<header
+  class:list={[
+    "header z-30",
+    settings.sticky_header && "sticky top-0",
+    "transition-shadow duration-300",
+  ]}
+>
+  <nav class="navbar container">
+    <div class="flex items-center justify-between w-full">
+      <!-- Logo -->
+      <div class="flex-shrink-0">
+        <Logo />
+      </div>
+
+      <!-- Desktop Navigation - Centered -->
+      <div class="hidden lg:flex flex-1 justify-center">
+        <ul class="flex items-center space-x-8">
+          {
+            menu.main.map((menuItem) => (
+              <li class="relative group">
+                {menuItem.hasChildren ? (
+                  <>
+                    <button
+                      class:list={[
+                        "nav-link flex items-center space-x-1",
+                        "py-2 px-3 transition-colors",
+                        isParentActive(menuItem.children) &&
+                          "text-primary font-medium",
+                      ]}
+                      data-submenu-toggle
+                    >
+                      <span>{menuItem.name}</span>
+                      <svg
+                        class="h-4 w-4 transition-transform"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M6 9L12 15L18 9"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </button>
+
+                    <ul class="submenu absolute top-full left-0 mt-2 min-w-48 bg-white dark:bg-dark border rounded-md shadow py-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                      {menuItem.children.map((child) => (
+                        <li>
+                          <a
+                            href={child.url}
+                            class:list={[
+                              "nav-dropdown-link block py-2 px-3",
+                              isMenuItemActive(child.url) &&
+                                "text-primary font-medium",
+                            ]}
+                          >
+                            {child.name}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : (
+                  <a
+                    href={menuItem.url}
+                    class:list={[
+                      "nav-link block py-2 px-3 transition-colors",
+                      isMenuItemActive(menuItem.url) &&
+                        "text-primary font-medium",
+                    ]}
+                  >
+                    {menuItem.name}
+                  </a>
+                )}
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+
+      <!-- Right side items -->
+      <div class="flex items-center space-x-4 lg:space-x-6">
+        <ThemeSwitcher className="mr-0" />
+        <Cart />
+
+        <!-- Mobile menu toggle -->
+        <div class="lg:hidden">
+          <button
+            id="nav-toggle-mobile"
+            class="flex items-center text-text-dark dark:text-white border border-border dark:border-border/40 p-1 rounded-md focus:outline-none"
+          >
+            <svg
+              class="h-5 w-5 menu-open"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <title>Menu Open</title>
+              <path d="M0 3h20v2H0V3z m0 6h20v2H0V9z m0 6h20v2H0V0z"></path>
+            </svg>
+            <svg
+              class="h-5 w-5 menu-close hidden"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <title>Menu Close</title>
+              <polygon
+                points="11 9 22 9 22 11 11 11 11 22 9 22 9 11 -2 11 -2 9 9 9 9 -2 11 -2"
+                transform="rotate(45 10 10)"></polygon>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile menu overlay -->
+    <div
+      class="fixed top-0 left-0 h-full bg-black opacity-50 w-full hidden overlay z-40"
+    >
+    </div>
+
+    <!-- Mobile menu sidebar -->
+    <div
+      class="fixed top-0 left-0 h-full bg-white dark:bg-darkmode-body overflow-y-auto w-full md:w-96 p-9 sidebar-mobile transform -translate-x-full transition-transform z-50"
+    >
+      <div class="flex justify-between items-center mb-14">
+        <Logo />
+        <button class="close-sidebar-mobile p-2">
+          <svg class="h-5 fill-current block" viewBox="0 0 20 20">
+            <title>Menu Close</title>
+            <polygon
+              points="11 9 22 9 22 11 11 11 11 22 9 22 9 11 -2 11 -2 9 9 9 9 -2 11 -2"
+              transform="rotate(45 10 10)"></polygon>
+          </svg>
+        </button>
+      </div>
+
+      <ul class="nav-list">
+        {
+          menu.main.map((menuItem) => (
+            <li
+              class:list={["nav-item", menuItem.hasChildren && "has-children"]}
+            >
+              {menuItem.hasChildren ? (
+                <>
+                  <button
+                    class:list={[
+                      "nav-link w-full flex justify-between items-center",
+                      "py-2 px-3",
+                      isParentActive(menuItem.children) &&
+                        "text-primary font-medium",
+                    ]}
+                    data-submenu-toggle
+                  >
+                    {menuItem.name}
+                    <svg
+                      class="h-4 w-4 submenu-arrow transition-transform"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M6 9L12 15L18 9"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </button>
+                  <ul class="submenu hidden pl-4 mt-2 space-y-2 bg-white dark:bg-dark rounded-md shadow py-4">
+                    {menuItem.children.map((child) => (
+                      <li>
+                        <a
+                          href={child.url}
+                          class:list={[
+                            "nav-dropdown-link block",
+                            "py-2 px-3",
+                            isMenuItemActive(child.url) &&
+                              "text-primary font-medium",
+                          ]}
+                        >
+                          {child.name}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <a
+                  href={menuItem.url}
+                  class:list={[
+                    "nav-link block",
+                    "py-2 px-3 rounded-lg transition-colors",
+                    isMenuItemActive(menuItem.url) &&
+                      "text-primary font-medium",
+                  ]}
+                >
+                  {menuItem.name}
+                </a>
+              )}
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </nav>
+</header>
+
+<script>
+  function initializeHeader() {
+    const header = document.querySelector("header");
+    const navToggleMobile = document.querySelector("#nav-toggle-mobile");
+    const sidebarMobile = document.querySelector(".sidebar-mobile");
+    const overlay = document.querySelector(".overlay");
+    const closeButtonMobile = document.querySelector(".close-sidebar-mobile");
+    const menuOpenIcon = document.querySelector(".menu-open");
+    const menuCloseIcon = document.querySelector(".menu-close");
+    const submenuToggles = document.querySelectorAll("[data-submenu-toggle]");
+
+    let showSidebar = false;
+
+    function updateNavbarShadow() {
+      if (window.scrollY > 0) {
+        header?.classList.add("shadow-sm");
+      } else {
+        header?.classList.remove("shadow-sm");
+      }
+    }
+
+    function toggleMobileSidebar() {
+      showSidebar = !showSidebar;
+      if (showSidebar) {
+        sidebarMobile?.classList.remove("-translate-x-full");
+        overlay?.classList.remove("hidden");
+        menuOpenIcon?.classList.add("hidden");
+        menuCloseIcon?.classList.remove("hidden");
+      } else {
+        sidebarMobile?.classList.add("-translate-x-full");
+        overlay?.classList.add("hidden");
+        menuOpenIcon?.classList.remove("hidden");
+        menuCloseIcon?.classList.add("hidden");
+      }
+    }
+
+    function toggleSubmenu(e: any) {
+      const button = e.currentTarget;
+      const submenu = button.nextElementSibling;
+      const arrow = button.querySelector(".submenu-arrow");
+
+      if (submenu) {
+        submenu.classList.toggle("hidden");
+        arrow?.classList.toggle("rotate-180");
+      }
+    }
+
+    // Event Listeners
+    window.addEventListener("scroll", updateNavbarShadow);
+    navToggleMobile?.addEventListener("click", toggleMobileSidebar);
+    overlay?.addEventListener("click", toggleMobileSidebar);
+    closeButtonMobile?.addEventListener("click", toggleMobileSidebar);
+
+    submenuToggles.forEach((toggle) => {
+      toggle.addEventListener("click", toggleSubmenu);
+    });
+
+    // Cleanup function
+    return () => {
+      window.removeEventListener("scroll", updateNavbarShadow);
+      navToggleMobile?.removeEventListener("click", toggleMobileSidebar);
+      overlay?.removeEventListener("click", toggleMobileSidebar);
+      closeButtonMobile?.removeEventListener("click", toggleMobileSidebar);
+      submenuToggles.forEach((toggle) => {
+        toggle.removeEventListener("click", toggleSubmenu);
+      });
+    };
+  }
+
+  // Initialize when the document is loaded
+  document.addEventListener("astro:page-load", initializeHeader);
+</script>

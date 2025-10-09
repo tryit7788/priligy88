@@ -1,0 +1,135 @@
+---
+import FeaturedProducts from "@/components/FeaturedProducts.astro";
+import CollectionsSlider from "@/functional-components/CollectionsSlider";
+import Accordion from "@/functional-components/Accordion";
+import Base from "@/layouts/Base.astro";
+import HomeBlog from "@/layouts/partials/HomeBlog.astro";
+import CallToAction from "@/partials/CallToAction.astro";
+import HeroSlider from "src/layouts/functional-components/HeroSlider";
+import { payload as _payload } from "../lib/payload";
+import { markdownify } from "@/lib/utils/textConverter";
+import type { Product, ProductCategory } from "payload_app";
+import type { CollectionEntry } from "astro:content";
+import { getEntry } from "astro:content";
+export const prerender = true;
+
+const payload = await _payload();
+const heroProducts = await payload.find({
+  collection: "hero-slides",
+  depth: 2,
+  where: {
+    enabled: {
+      equals: true,
+    }
+  },
+});
+
+const products = await payload.find({
+  collection: "products",
+  depth: 2,
+  where:{
+    published: {
+      equals:true
+    }
+  }
+});
+const counts: Record<string, { count: number; category: ProductCategory }> = {};
+
+for (const product of products?.docs) {
+  const cat = product.category;
+
+  // Skip if no category
+  if (!cat) continue;
+
+  const categoryId = typeof cat === "number" ? cat : cat.id;
+
+  if (!counts[categoryId]) {
+    counts[categoryId] = {
+      count: 0,
+      category: cat as ProductCategory,
+    };
+  }
+
+  counts[categoryId].count += 1;
+}
+
+const productCategories = Object.values(counts);
+
+// Get FAQ data from about page content
+const about = (await getEntry("about", "-index")) as CollectionEntry<"about">;
+const {
+  faq_section_title,
+  faq_section_subtitle,
+  faqs,
+  button,
+} = about.data;
+
+---
+
+<Base>
+  <section>
+    <div class="container">
+      <div class="bg-gradient py-10 rounded-md">
+        <HeroSlider products={heroProducts?.docs || []} client:load />
+      </div>
+    </div>
+  </section>
+
+  <!-- {/* category section */}
+  <section class="section">
+    <div class="container">
+      <div class="text-center mb-6 md:mb-14">
+        <h2>Collections</h2>
+      </div>
+      <CollectionsSlider client:load collections={productCategories} />
+    </div>
+  </section> -->
+
+  {/* Featured Products section */}
+  <section>
+    <div class="container">
+      <div class="text-center mb-6 md:mb-14">
+        <h2 class="mb-2">最新壯陽藥</h2>
+        <p class="md:h5">提供必利勁，犀利士，威而鋼，樂威壯!</p>
+      </div>
+      <FeaturedProducts products={products.docs} />
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section class="section">
+    <div class="container">
+      <div
+        class="bg-light px-7 lg:px-32 py-20 dark:bg-darkmode-light mb-14 xl:mb-28 rounded-md"
+      >
+        <div class="row">
+          <div class="md:col-5 mx-auto space-y-5 mb-10 md:mb-0">
+            <h1 set:html={markdownify(faq_section_title!)} />
+            <p
+              set:html={markdownify(faq_section_subtitle!)}
+              class="md:text-lg"
+            />
+
+            {
+              button?.enable && (
+                <a
+                  class="btn btn-sm md:btn-lg btn-primary font-medium"
+                  href={button.link}
+                >
+                  {button.label}
+                </a>
+              )
+            }
+          </div>
+
+          <div class="md:col-7">
+            <Accordion client:load faqs={faqs} />
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <HomeBlog />
+  <!-- <CallToAction /> -->
+</Base>

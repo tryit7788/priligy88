@@ -1,0 +1,308 @@
+---
+import Base from "@/layouts/Base.astro";
+import { payload } from "@/lib/payload";
+import dateFormat from "@/lib/utils/dateFormat";
+import { generatPayloadImageUrl } from "@/lib/utils";
+import SocialShare from "@/functional-components/SocialShare";
+import {
+  convertLexicalToHTMLAsync,
+  type HTMLConvertersFunctionAsync,
+} from "@payloadcms/richtext-lexical/html-async";
+import { experimental_AstroContainer } from "astro/container";
+import type { DefaultNodeTypes } from "@payloadcms/richtext-lexical";
+import type { Media } from "payload_app";
+
+export const prerender = false;
+
+type NodeTypes = DefaultNodeTypes;
+
+const { slug } = Astro.params;
+
+if (!slug) {
+  return Astro.redirect("/404");
+}
+
+// Fetch the specific blog post
+let blog;
+try {
+  const payloadClient = await payload();
+  const result = await payloadClient.find({
+    collection: "blogs",
+    where: {
+      slug: {
+        equals: slug,
+      },
+      published: {
+        equals: true,
+      },
+    },
+    depth: 2,
+  });
+
+  blog = result.docs[0];
+} catch (error) {
+  console.error("Error fetching blog:", error);
+  return Astro.redirect("/404");
+}
+
+if (!blog) {
+  return Astro.redirect("/404");
+}
+
+// Convert lexical richtext to HTML
+let blogContentInHTML = "";
+
+try {
+  const container = await experimental_AstroContainer.create({});
+  //@ts-ignore
+  const htmlConverters: HTMLConvertersFunctionAsync = ({
+    defaultConverters,
+  }) => {
+    return {
+      ...defaultConverters,
+      upload: async ({ node, ...props }: { node: { value: Media } }) => {
+        //@ts-ignore
+        const result = await container.renderToString("img", {
+          props: {
+            src: generatPayloadImageUrl(node?.value?.url),
+            alt: node?.value?.alt as string,
+            class: "w-full h-auto rounded-xl shadow-lg my-8",
+          },
+        });
+        return result;
+      },
+    };
+  };
+
+  blogContentInHTML = await convertLexicalToHTMLAsync({
+    data: blog.content,
+    converters: htmlConverters,
+  });
+} catch (error) {
+  console.error("Error converting lexical content to HTML:", error);
+  blogContentInHTML = "<p>Content could not be loaded.</p>";
+}
+---
+
+<Base
+  title={blog.title}
+  description={blog.meta?.description || blog?.excerpt || blog?.title}
+  jsonLd={blog.meta?.jsonLD}
+  canonical={blog.meta?.canonical ?? undefined}
+>
+  <!-- Hero Section -->
+  <section
+    class="relative bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 dark:from-primary/10 dark:via-transparent dark:to-secondary/10"
+  >
+    <div class="container mx-auto px-4 py-16 lg:py-24">
+      <div class="max-w-4xl mx-auto">
+        <!-- Breadcrumb -->
+        <nav class="mb-8" aria-label="Breadcrumb">
+          <ol class="flex items-center space-x-2 text-sm text-muted-foreground">
+            <li>
+              <a href="/" class="hover:text-primary transition-colors">首頁</a>
+            </li>
+            <li class="flex items-center">
+              <svg class="w-4 h-4 mx-2" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fill-rule="evenodd"
+                  d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                  clip-rule="evenodd"></path>
+              </svg>
+              <a href="/blog" class="hover:text-primary transition-colors"
+                >Blog</a
+              >
+            </li>
+            <li class="flex items-center">
+              <svg class="w-4 h-4 mx-2" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fill-rule="evenodd"
+                  d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                  clip-rule="evenodd"></path>
+              </svg>
+              <span class="text-foreground">{blog.title}</span>
+            </li>
+          </ol>
+        </nav>
+
+        <!-- Article Header -->
+        <header class="mb-12">
+          {
+            blog.category && typeof blog.category === "object" && (
+              <div class="mb-6">
+                <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium border border-primary/20 bg-gray-300 dark:bg-gray-800 dark:text-white text-black">
+                  {blog.category.name}
+                </span>
+              </div>
+            )
+          }
+
+          <h1
+            class="text-4xl lg:text-5xl xl:text-6xl font-bold mb-6 leading-tight"
+          >
+            {blog.title}
+          </h1>
+
+          {
+            blog.excerpt && (
+              <p class="text-xl text-muted-foreground mb-8 leading-relaxed max-w-3xl">
+                {blog.excerpt}
+              </p>
+            )
+          }
+
+          <!-- Article Meta -->
+          <div
+            class="flex flex-wrap items-center gap-6 text-sm text-muted-foreground border-t border-border pt-6"
+          >
+            <div class="flex items-center gap-2">
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                ></path>
+              </svg>
+              <time datetime={blog.createdAt}>
+                {dateFormat(blog.createdAt, "MMMM dd, yyyy")}
+              </time>
+            </div>
+          </div>
+        </header>
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured Image -->
+  {
+    blog.featuredImage && (
+      <section class="container mx-auto px-4 mb-16">
+        <div class="max-w-5xl mx-auto">
+          <div class="relative overflow-hidden rounded-2xl shadow-2xl">
+            <img
+              class="w-full h-auto object-cover"
+              src={
+                typeof blog.featuredImage === "number"
+                  ? undefined
+                  : generatPayloadImageUrl(blog.featuredImage?.url)
+              }
+              alt={blog.title}
+              width={1200}
+              height={600}
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  <!-- Article Content -->
+  <section class="container mx-auto px-4 mb-16">
+    <div class="max-w-4xl mx-auto">
+      <article class="prose prose-lg dark:prose-invert max-w-none">
+        <div
+          class="bg-card border border-border rounded-2xl p-8 lg:p-12 shadow-lg"
+          set:html={blogContentInHTML}
+        />
+      </article>
+    </div>
+  </section>
+
+  <!-- Tags Section -->
+  {
+    blog.tags && blog.tags.length > 0 && (
+      <section class="container mx-auto px-4 mb-16">
+        <div class="max-w-4xl mx-auto">
+          <div class="bg-card border border-border rounded-2xl p-8 shadow-lg">
+            <h3 class="text-xl font-semibold mb-6 flex items-center gap-2">
+              <svg
+                class="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                />
+              </svg>
+              Tags
+            </h3>
+            <div class="flex flex-wrap gap-3">
+              {blog.tags.map((tag: any) => (
+                <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-secondary/10 text-secondary-foreground border border-secondary/20 hover:bg-secondary/20 transition-colors">
+                  {tag.name}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  <!-- Share Section -->
+  <section class="container mx-auto px-4 mb-16">
+    <div class="max-w-4xl mx-auto">
+      <div class="bg-card border border-border rounded-2xl p-8 shadow-lg">
+        <div
+          class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6"
+        >
+          <div>
+            <h3 class="text-xl font-semibold mb-2">分享這篇文章</h3>
+            <p class="text-muted-foreground">幫助其他人發現此內容</p>
+          </div>
+          <div class="flex items-center gap-4">
+            <SocialShare
+              socialName={blog.title}
+              className="flex items-center gap-3"
+              pathname={Astro.url.pathname}
+              client:only="react"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Related Articles CTA -->
+  <section class="container mx-auto px-4 mb-16">
+    <div class="max-w-4xl mx-auto">
+      <div
+        class="bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 rounded-2xl p-8 lg:p-12 text-center"
+      >
+        <h3 class="text-2xl font-bold mb-4">想要了解更多嗎?</h3>
+        <p class="text-muted-foreground mb-6 max-w-2xl mx-auto">
+          瀏覧我們的Blog，以獲取更多壯陽知識.
+        </p>
+        <a
+          href="/blog"
+          class="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+        >
+          瀏覧更多文章
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </section>
+</Base>

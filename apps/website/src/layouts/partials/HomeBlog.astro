@@ -1,0 +1,65 @@
+---
+import { getBlogs } from "@/lib/blog";
+import dateFormat from "@/lib/utils/dateFormat";
+import { generatPayloadImageUrl } from "@/lib/utils";
+import Button from "@/shortcodes/Button";
+import { payload as _payload } from "@/lib/payload";
+import type {Blog } from "payload_app";
+const payload = await _payload();
+const {docs:blogs} = await payload.find({
+  collection: "blogs",
+  depth: 2,
+  where: {
+    published: {
+      equals: true,
+    },
+  },
+  sort:"-createdAt"
+});
+
+---
+
+<section class="section">
+  <div class="container">
+    <div class="text-center mb-6 md:mb-14">
+      <h2 class="mb-2">壯陽知識</h2>
+      <p class="md:h5">男人就該多吃這些！告訴最近壯陽知識.</p>
+    </div>
+    <div class="row">
+      {
+        blogs.slice(0, 3).map((blog) => (
+          <div class="mb-14 md:col-6 lg:col-4">
+            <div class="lg:flex-col items-center">
+              <img
+                class="lg:mr-7 lg:w-full mb-6"
+                src={typeof blog.featuredImage == "number"? undefined : generatPayloadImageUrl(blog?.featuredImage?.url!)}
+                alt={blog.title}
+                width={445}
+                height={230}
+              />
+              <div>
+                <h3 class="h4 mb-4 mt-6 lg:mt-0">
+                  <a
+                    href={`/blog/${blog.slug}`}
+                    class="block hover:text-primary"
+                  >
+                    {blog.title}
+                  </a>
+                </h3>
+                <p class="mb-4 text-sm">
+                  <time datetime={blog.createdAt}>
+                    {dateFormat(blog.createdAt, "MMMM dd, yyyy")}
+                  </time>
+                </p>
+                <p>{blog.excerpt}...</p>
+              </div>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+    <div class="text-center">
+      <Button link="/blog" label="查看所有文章" />
+    </div>
+  </div>
+</section>

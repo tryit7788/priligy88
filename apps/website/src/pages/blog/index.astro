@@ -1,0 +1,97 @@
+---
+import Base from "@/layouts/Base.astro";
+import dateFormat from "@/lib/utils/dateFormat";
+import { payload as _payload } from "@/lib/payload";
+import { generatPayloadImageUrl } from "@/lib/utils";
+import Pagination from "@/layouts/components/Pagination.astro";
+
+export const prerender = false;
+
+const payload = await _payload();
+const BLOGS_PER_PAGE = 6;
+
+// For the index page, we always show page 1
+const currentPage = 1;
+
+// Fetch blogs with pagination
+const {
+  docs: blogs,
+  totalDocs,
+  totalPages,
+  hasNextPage,
+  hasPrevPage,
+} = await payload.find({
+  collection: "blogs",
+  depth: 2,
+  where: {
+    published: {
+      equals: true,
+    },
+  },
+  sort: "-createdAt",
+  limit: BLOGS_PER_PAGE,
+  page: currentPage,
+});
+---
+
+<Base title="Blog">
+  <section class="section">
+    <div class="container">
+      <div class="row">
+        <div class="mx-auto lg:col-10">
+          <h1 class="h2 mb-8 text-center">Blog</h1>
+          <div class="row">
+            {
+              blogs.map((blog) => (
+                <div class="mb-14 md:col-6 lg:col-4">
+                  <div class="lg:flex-col items-center">
+                    <img
+                      class="lg:mr-7 lg:w-full mb-6"
+                      src={
+                        typeof blog.featuredImage == "number"
+                          ? undefined
+                          : generatPayloadImageUrl(blog?.featuredImage?.url!)
+                      }
+                      alt={blog.title}
+                      width={445}
+                      height={230}
+                    />
+                    <div>
+                      <h3 class="h4 mb-4 mt-6 lg:mt-0">
+                        <a
+                          href={`/blog/${blog.slug}`}
+                          class="block hover:text-primary"
+                        >
+                          {blog.title}
+                        </a>
+                      </h3>
+                      <p class="mb-4 text-sm">
+                        <time datetime={blog.createdAt}>
+                          {dateFormat(blog.createdAt, "MMMM dd, yyyy")}
+                        </time>
+                      </p>
+                      <p>{blog.excerpt}...</p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+
+          <!-- Pagination -->
+          {
+            totalPages > 1 && (
+              <div class="mt-12">
+                <Pagination
+                  section="blog"
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                />
+              </div>
+            )
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>

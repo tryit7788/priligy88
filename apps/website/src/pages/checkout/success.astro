@@ -1,0 +1,14 @@
+---
+import Base from "@/layouts/Base.astro";
+import SuccessContent from "@/functional-components/checkout/SuccessContent";
+---
+
+<Base title="Order Success">
+  <SuccessContent client:load />
+</Base>
+
+<script>
+  import { resetCart } from "@/cartStore";
+  
+  resetCart();
+</script>

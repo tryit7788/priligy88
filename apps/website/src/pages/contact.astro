@@ -1,0 +1,208 @@
+---
+import config from "@/config/config.json";
+import Base from "@/layouts/Base.astro";
+import { markdownify } from "@/lib/utils/textConverter";
+import PageHeader from "@/partials/PageHeader.astro";
+import type { CollectionEntry } from "astro:content";
+import { getEntry } from "astro:content";
+
+const contact = (await getEntry(
+  "contact",
+  "-index"
+)) as CollectionEntry<"contact">;
+const { contact_form_action }: { contact_form_action: string } = config.params;
+const { title, meta_title, description, image, contact_meta } = contact.data;
+---
+
+<Base
+  title={title}
+  meta_title={meta_title}
+  description={description}
+  image={image}
+>
+  <PageHeader title={title} />
+
+  <section class="pt-12 xl:pt-24">
+    <div class="container">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {
+          contact_meta &&
+            contact_meta?.map((contact) => (
+              <div class="p-10 bg-light dark:bg-darkmode-light rounded-md text-center">
+                <p
+                  set:html={markdownify(contact.name)}
+                  class="mb-6 h3 font-medium text-text-dark dark:text-darkmode-text-dark"
+                />
+                <p set:html={markdownify(contact.contact)} />
+              </div>
+            ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="mx-auto lg:col-10">
+        <h2 class="mb-14 text-center">填寫資料，我們會儘快回覆您!</h2>
+
+        <form
+          id="contactForm"
+          class="border border-border dark:border-darkmode-border rounded-md p-10"
+          method="POST"
+        >
+          <div class="mb-6 md:grid grid-cols-2 gap-x-8 max-md:space-y-6">
+            <div>
+              <label for="name" class="form-label">
+                姓名
+              </label>
+              <input
+                id="name"
+                name="name"
+                class="form-input"
+                placeholder="必填"
+                type="text"
+              />
+            </div>
+
+            <div>
+              <label for="email" class="form-label">
+                Email 地址
+              </label>
+              <input
+                id="email"
+                name="email"
+                class="form-input"
+                placeholder="john.doe@email.com"
+                type="email"
+              />
+            </div>
+          </div>
+
+          <div class="mb-6">
+            <label for="message" class="form-label">
+              你的訊息
+            </label>
+            <textarea
+              id="message"
+              name="message"
+              class="form-input"
+              placeholder="輸入您的訊息..."
+              rows={8}
+              ></textarea>
+
+          </div>
+
+          <div class="flex justify-end">
+            <button type="submit" class="btn btn-primary">
+              提交
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- Notification Toast -->
+  <div id="notification" class="fixed top-4 right-4 z-50 hidden">
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 max-w-sm">
+      <div class="flex items-start">
+        <div class="flex-shrink-0">
+          <svg id="successIcon" class="hidden h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <svg id="errorIcon" class="hidden h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div class="ml-3 flex-1">
+          <p id="notificationMessage" class="text-sm font-medium text-gray-900 dark:text-white"></p>
+        </div>
+        <div class="ml-4 flex-shrink-0">
+          <button id="closeNotification" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showNotification(message: string, type: 'success' | 'error' = 'success') {
+      const notification = document.getElementById('notification');
+      const messageEl = document.getElementById('notificationMessage');
+      const successIcon = document.getElementById('successIcon');
+      const errorIcon = document.getElementById('errorIcon');
+
+      if (!notification || !messageEl || !successIcon || !errorIcon) return;
+
+      messageEl.textContent = message;
+
+      if (type === 'success') {
+        successIcon.classList.remove('hidden');
+        errorIcon.classList.add('hidden');
+      } else {
+        successIcon.classList.add('hidden');
+        errorIcon.classList.remove('hidden');
+      }
+
+      notification.classList.remove('hidden');
+
+      setTimeout(() => {
+        hideNotification();
+      }, 5000);
+    }
+
+    function hideNotification() {
+      const notification = document.getElementById('notification');
+      if (notification) {
+        notification.classList.add('hidden');
+      }
+    }
+
+    document.getElementById('closeNotification')?.addEventListener('click', hideNotification);
+
+
+    document.getElementById('contactForm')?.addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const form = e.target as HTMLFormElement;
+      const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+      if (!submitButton) return;
+
+      const originalText = submitButton.textContent;
+
+
+      submitButton.disabled = true;
+      submitButton.textContent = '發送中...';
+
+      try {
+        const formData = new FormData(form);
+        const response = await fetch('/api/contact', {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          // Show success message
+          showNotification(result.message, 'success');
+          form.reset();
+        } else {
+          // Show error message
+          showNotification(result.message, 'error');
+        }
+      } catch (error) {
+        console.error('Form submission error:', error);
+        showNotification('發送訊息時發生錯誤，請稍後再試。', 'error');
+      } finally {
+        // Re-enable submit button
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
+      }
+    });
+  </script>
+</Base>

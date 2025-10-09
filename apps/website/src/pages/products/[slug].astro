@@ -1,0 +1,278 @@
+---
+import Base from "@/layouts/Base.astro";
+import FeaturedProducts from "@/components/FeaturedProducts.astro";
+import SocialShare from "@/functional-components/SocialShare";
+import ProductGallery from "@/functional-components/product/ProductGallery";
+import ShowTags from "@/functional-components/product/ShowTags";
+import Tabs from "@/functional-components/product/Tabs";
+import { AddToCart } from "@/functional-components/cart/AddToCart";
+import { getAllProducts, getRelatedProducts } from "@/lib/payload/products";
+import config from "@/config/config.json";
+import { generatPayloadImageUrl } from "@/lib/utils";
+import type { Media, Product, ProductCategory, ProductTag } from "payload_app";
+import { ProductVariantManager } from "@/layouts/functional-components/product/ProductVariantManager";
+import {
+  convertLexicalToHTMLAsync,
+  type HTMLConvertersFunctionAsync,
+} from "@payloadcms/richtext-lexical/html-async";
+import { experimental_AstroContainer } from "astro/container";
+
+export const prerender = false; // Switch to SSR to handle dynamic products
+
+// For SSR, we don't need getStaticPaths, but we can keep it as fallback for static generation
+export async function getStaticPaths() {
+  try {
+    const products = await getAllProducts();
+    console.log(`Generated static paths for ${products.length} products`);
+
+    const paths = products.map((product) => {
+      console.log(`Generating path for product: ${product.slug}`);
+      return {
+        params: { slug: product.slug },
+        props: { product },
+      };
+    });
+
+    return paths;
+  } catch (error) {
+    console.error("Error generating static paths for products:", error);
+    console.error("Stack trace:", error instanceof Error ? error.stack : String(error));
+    return [];
+  }
+}
+
+// For SSR mode, we need to fetch the product dynamically by slug
+let product: Product | null = Astro.props?.product as Product;
+
+if (!product) {
+  // In SSR mode, fetch the product by slug
+  const { slug } = Astro.params;
+  if (!slug) {
+    return Astro.redirect("/404");
+  }
+
+  try {
+    const { getProductBySlug } = await import("@/lib/payload/products");
+    const fetchedProduct = await getProductBySlug(slug);
+
+    if (!fetchedProduct) {
+      console.warn(`Product with slug "${slug}" not found`);
+      return Astro.redirect("/404");
+    }
+
+    // If the product slug is different from requested slug, redirect to correct URL
+    if (fetchedProduct.slug !== slug) {
+      console.log(`Redirecting from "${slug}" to "${fetchedProduct.slug}"`);
+      return Astro.redirect(`/products/${fetchedProduct.slug}`, 301); // Permanent redirect
+    }
+
+    product = fetchedProduct;
+  } catch (error) {
+    console.error(`Error fetching product with slug "${slug}":`, error);
+    console.error("This might be a database connectivity issue or the product doesn't exist in production");
+    return Astro.redirect("/404");
+  }
+}
+
+// At this point, product should never be null due to the redirects above
+if (!product) {
+  return Astro.redirect("/404");
+}
+
+// TypeScript assertion - we know product is not null at this point
+const productData = product as Product;
+
+const {
+  id,
+  title,
+  description,
+  additionalData,
+  originalPrice,
+  discountedPrice,
+  featuredImage,
+  images,
+  tags,
+  category,
+} = productData;
+
+// --- Process Images for Gallery ---
+const galleryImages: Media[] = [];
+// Add featured image first if it exists and is a valid Media object
+if (featuredImage && typeof featuredImage === "object") {
+  galleryImages.push(featuredImage as Media);
+}
+// Add the rest of the images, filtering out any invalid entries
+if (Array.isArray(images)) {
+  const otherImages = images
+    .map((img) => (typeof img === "object" && img !== null ? img : null))
+    .filter((img): img is Media => img !== null);
+  galleryImages.push(...otherImages);
+}
+// Ensure uniqueness in case the featured image is also in the images array
+const uniqueGalleryImages = Array.from(
+  new Map(galleryImages.map((item) => [item.id, item])).values(),
+);
+
+// --- Process Rich Text for Tabs ---
+const convertToHtml = async (data: any) => {
+  if (!data || !data.root || !data.root.children) return "";
+  try {
+    const container = await experimental_AstroContainer.create({});
+    const htmlConverters: HTMLConvertersFunctionAsync = ({
+      defaultConverters,
+    }) => ({
+      ...defaultConverters,
+      //@ts-ignore
+      upload: async ({ node }: { node: { value: Media } }) => {
+        if (!node.value?.url) return "";
+        //@ts-ignore
+        return await container.renderToString("img", {
+          props: {
+            src: generatPayloadImageUrl(node.value.url),
+            alt: node.value.alt || "Image from content",
+            class: "w-full h-auto rounded-xl shadow-lg my-8",
+          },
+        });
+      },
+    });
+    return await convertLexicalToHTMLAsync({
+      data,
+      converters: htmlConverters,
+    });
+  } catch (error) {
+    console.error("Error converting rich text to HTML:", error);
+    return "<p>Error loading content.</p>";
+  }
+};
+
+const descriptionHtml = await convertToHtml(description);
+const additionalDataHtml = await convertToHtml(additionalData);
+let tabsContentHtml = descriptionHtml;
+if (additionalDataHtml) {
+  tabsContentHtml += `--- split content ---${additionalDataHtml}`;
+}
+
+// --- Fetch Related Products ---
+const categoryId =
+  typeof category === "object" && category !== null && "id" in category
+    ? (category as ProductCategory).id
+    : undefined;
+
+const relatedProducts = categoryId
+  ? await getRelatedProducts(id, categoryId)
+  : [];
+
+// --- Prepare Data for Components ---
+const { currencySymbol } = config.shopify;
+const productTags = (Array.isArray(tags) ? tags : [])
+  .map((tag) => (typeof tag === "object" && tag !== null ? tag : null))
+  .filter((tag): tag is ProductTag => tag !== null);
+---
+
+<Base
+  title={productData?.meta?.title || productData.title}
+  description={productData?.meta?.description ||
+    `View details for ${productData.title}`}
+  jsonLd={productData.meta?.jsonLD}
+  canonical={productData.meta?.canonical ?? undefined}
+>
+  <section class="md:section-sm">
+    <div class="container">
+      <div class="row justify-center">
+        <!-- Product Gallery -->
+        <div class="col-10 md:col-8 lg:col-6">
+          <ProductGallery client:only="react" images={uniqueGalleryImages} />
+        </div>
+
+        <!-- Product Details -->
+        <div class="col-10 md:col-8 lg:col-5 md:ml-7 py-6 lg:py-0">
+          <h1 class="text-3xl md:h2 mb-2 md:mb-6">{title}</h1>
+
+          <!-- Price -->
+          <div class="flex gap-2 items-center mb-6">
+            {
+              discountedPrice && discountedPrice < originalPrice ? (
+                <>
+                  <h4 class="text-text-light dark:text-darkmode-text-light max-md:h2">
+                    {currencySymbol}
+                    {discountedPrice.toFixed(2)}
+                  </h4>
+                  <s class="text-text-light max-md:h3 dark:text-darkmode-text-light">
+                    {currencySymbol}
+                    {originalPrice.toFixed(2)}
+                  </s>
+                </>
+              ) : (
+                <h4 class="text-text-light dark:text-darkmode-text-light max-md:h2">
+                  {currencySymbol}
+                  {originalPrice.toFixed(2)}
+                </h4>
+              )
+            }
+          </div>
+
+          <!-- Variant Manager (includes variant selector and add to cart) -->
+          <ProductVariantManager
+            client:only="react"
+            product={productData}
+            stylesClass={"btn max-md:btn-sm btn-primary"}
+          />
+
+          <hr class="my-6 border border-border dark:border-border/40" />
+
+          <!-- Social Share -->
+          <div class="flex gap-3 items-center mb-6">
+            <h5 class="max-md:text-base">分享:</h5>
+            <SocialShare
+              socialName={title}
+              className="social-icons"
+              pathname={Astro.url.pathname}
+              client:only="react"
+            />
+          </div>
+
+          <!-- Tags -->
+          {
+            productTags.length > 0 && (
+              <div class="flex flex-wrap gap-3 items-center">
+                <h5 class="max-md:text-base">Tags:</h5>
+                <ShowTags client:only="react" tags={productTags} />
+              </div>
+            )
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Product Description and Additional Data Tabs -->
+  {
+    (descriptionHtml || additionalDataHtml) && (
+      <section>
+        <div class="container">
+          <div class="row">
+            <div class="col-10 lg:col-11 mx-auto mt-12">
+              <Tabs client:only="react" descriptionHtml={tabsContentHtml} />
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  <!-- Related Products -->
+  <section class="section">
+    <div class="container">
+      {
+        relatedProducts?.length > 0 && (
+          <>
+            <div class="text-center mb-6 md:mb-14">
+              <h2 class="mb-2">相關商品</h2>
+            </div>
+            <FeaturedProducts products={relatedProducts} />
+          </>
+        )
+      }
+    </div>
+  </section>
+</Base>
