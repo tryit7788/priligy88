@@ -27,4 +27,4 @@ export async function GET() {
 }
 
 // Tell Astro to generate this as a static endpoint
-export const prerender = true;
+export const prerender = false;
