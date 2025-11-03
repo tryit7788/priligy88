@@ -222,6 +222,16 @@ export async function getVendors() {
   return brands.docs;
 }
 
+export async function getTags() {
+  const payloadClient = await payload();
+
+  const tags = await payloadClient.find({
+    collection: "product-tags",
+  });
+
+  return tags.docs;
+}
+
 export async function getAllProducts() {
   const payloadClient = await payload();
 

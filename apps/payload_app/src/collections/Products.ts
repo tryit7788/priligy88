@@ -187,6 +187,7 @@ const Products: CollectionConfig = {
           doc.variantDetails = []
           doc.totalStock = 0
         }
+        console.log("[TRACE] doc.totalStock = ", doc.totalSotck)
         return doc
       },
     ],
@@ -206,6 +207,7 @@ const Products: CollectionConfig = {
             })
           }
         }
+        console.log("[TRACE] doc.totalStock = ", doc.totalSotck)
         return doc
       },
     ],

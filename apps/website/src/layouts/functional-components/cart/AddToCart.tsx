@@ -110,6 +110,8 @@ export function AddToCart({
   const isAvailable = currentVariant
     ? currentVariant.stock > 0
     : product.published && (product.totalStock || 0) > 0;
+  
+  console.log("[TRACE] product.totalStock = ", product.totalStock)
 
   const buttonClasses = `${stylesClass} ${
     pending || !isAvailable ? "cursor-not-allowed" : ""
