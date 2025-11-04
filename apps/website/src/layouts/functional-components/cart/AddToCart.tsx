@@ -6,7 +6,7 @@ import type {
   ProcessedVariant,
   CartItemWithVariant,
 } from "@/lib/shopify/types";
-import { normalizeVariantId, normalizeProductId } from "@/lib/utils/variantId";
+import { normalizeVariantId } from "@/lib/utils/variantId";
 import { getProductPrice, isValidPrice } from "@/lib/utils/pricing";
 
 interface AddToCartProps {
@@ -41,15 +41,12 @@ export function AddToCart({
     setError(null);
 
     try {
-      // Normalize product ID to string (handles MongoDB ObjectId objects)
-      const normalizedProductId = normalizeProductId(product.id);
-
       // Server-side validate price/stock
       const res = await fetch("/api/validate-cart-item", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          productId: normalizedProductId,
+          productId: product.id,
           variantId: currentVariant?.id || currentVariant?.mappingId, // Use mapping ID for validation
         }),
       });
@@ -85,19 +82,15 @@ export function AddToCart({
             }
           : null;
 
-      // Extract image URL safely
-      let imageUrl = "";
-      if (product.featuredImage && typeof product.featuredImage !== "number") {
-        const featuredImg = product.featuredImage as any;
-        imageUrl = featuredImg?.url || "";
-      }
-
       const item: CartItemWithVariant = {
-        id: normalizedProductId,
+        id: product.id,
         title: product.title,
         price: validatedPrice,
         quantity: 1,
-        image: imageUrl,
+        image:
+          typeof product.featuredImage === "number"
+            ? ""
+            : product.featuredImage?.url || "",
         slug: product.slug || undefined,
         variant: variantInfo,
       };

@@ -4,7 +4,7 @@ import { cartOperations } from "@/cartStore";
 import LoadingDots from "../loadings/LoadingDots";
 
 interface DeleteItemButtonProps {
-  productId: string | number; // Support both string (MongoDB ObjectId) and number (PostgreSQL)
+  productId: number;
   variantId?: string | number;
 }
 

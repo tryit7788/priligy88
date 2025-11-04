@@ -61,7 +61,7 @@ export interface ProcessedVariant {
 
 // Cart item with variant support
 export interface CartItemWithVariant {
-  id: string | number; // Support both string (MongoDB ObjectId) and number (PostgreSQL)
+  id: number;
   title: string;
   price: number;
   quantity: number;
