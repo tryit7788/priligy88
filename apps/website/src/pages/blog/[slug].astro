@@ -53,19 +53,44 @@ try {
     if (needsPopulation) {
       const tagIds = blog.tags
         .map((tag: any) => {
-          if (typeof tag === "number" || typeof tag === "string") {
+          if (typeof tag === "number") {
+            return tag;
+          }
+          if (typeof tag === "string") {
             return tag;
           }
           if (typeof tag === "object" && tag !== null) {
-            return tag?.id || tag;
+            // Handle ObjectId or Buffer (MongoDB)
+            if (Buffer.isBuffer(tag)) {
+              return tag.toString('hex');
+            }
+            // Check if it's an ObjectId
+            if (tag.toString && typeof tag.toString === 'function' && tag._bsontype === 'ObjectId') {
+              return tag.toString();
+            }
+            // If object has id property
+            if (tag.id) {
+              const id = tag.id;
+              if (Buffer.isBuffer(id)) {
+                return id.toString('hex');
+              }
+              if (id.toString && typeof id.toString === 'function' && id._bsontype === 'ObjectId') {
+                return id.toString();
+              }
+              return id;
+            }
+            // Try to convert object to string if it looks like ObjectId
+            if (tag.toString && typeof tag.toString === 'function') {
+              const str = tag.toString();
+              if (/^[0-9a-fA-F]{24}$/.test(str)) {
+                return str;
+              }
+            }
+            return tag;
           }
           return null;
         })
-        .filter((id: any) => id != null)
-        .map((id: any) => {
-          const num = Number(id);
-          return isNaN(num) ? id : num;
-        });
+        .filter((id: any) => id != null);
 
       if (tagIds.length > 0) {
         try {

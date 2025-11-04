@@ -21,19 +21,51 @@ export async function populateBlogTags(
     return blog;
   }
 
-  // Extract tag IDs (could be numbers, strings, or objects with id property)
+  // Extract tag IDs (could be numbers, strings, ObjectIds, Buffers, or objects with id property)
   const tagIds = blog.tags
     .map((tag: any) => {
-      if (typeof tag === "number" || typeof tag === "string") {
+      if (typeof tag === "number") {
+        return tag;
+      }
+      if (typeof tag === "string") {
+        // If it's already a string, check if it's a valid ObjectId hex string
         return tag;
       }
       if (typeof tag === "object" && tag !== null) {
-        return tag?.id || tag;
+        // Handle ObjectId or Buffer (MongoDB)
+        if (Buffer.isBuffer(tag)) {
+          // Convert Buffer to hex string for MongoDB ObjectId
+          return tag.toString('hex');
+        }
+        // Check if it's an ObjectId with toString method
+        if (tag.toString && typeof tag.toString === 'function' && tag._bsontype === 'ObjectId') {
+          return tag.toString();
+        }
+        // If object has id property, extract it
+        if (tag.id) {
+          const id = tag.id;
+          // Handle nested ObjectId/Buffer
+          if (Buffer.isBuffer(id)) {
+            return id.toString('hex');
+          }
+          if (id.toString && typeof id.toString === 'function' && id._bsontype === 'ObjectId') {
+            return id.toString();
+          }
+          return id;
+        }
+        // If the object itself might be an ObjectId
+        if (tag.toString && typeof tag.toString === 'function') {
+          const str = tag.toString();
+          // Check if it looks like an ObjectId (24 char hex string)
+          if (/^[0-9a-fA-F]{24}$/.test(str)) {
+            return str;
+          }
+        }
+        return tag;
       }
       return null;
     })
-    .filter((id: any) => id != null)
-    .map((id: any) => String(id)); // Normalize to strings for comparison
+    .filter((id: any) => id != null);
 
   if (tagIds.length === 0) {
     blog.tags = [];
@@ -42,16 +74,13 @@ export async function populateBlogTags(
 
   // Fetch the tag documents
   try {
-    // Convert tagIds back to numbers if they're numeric strings (for database queries)
-    const numericTagIds = tagIds.map((id: string) => {
-      const num = Number(id);
-      return isNaN(num) ? id : num;
-    });
-
+    // For MongoDB, use the IDs as-is (they're already hex strings if needed)
+    // For PostgreSQL, convert numeric strings to numbers
+    // Payload CMS will handle the conversion based on the database adapter
     const { docs: tagDocs } = await payloadClient.find({
       collection: "blog-tags",
       where: {
-        id: { in: numericTagIds },
+        id: { in: tagIds },
       },
       limit: tagIds.length,
       overrideAccess: true, // Bypass access controls since this is server-side

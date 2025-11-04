@@ -24,11 +24,11 @@ export default defineConfig({
       noExternal: ["react-image-crop"],
     },
     build: {
-      sourcemap: true, // Enable source maps for browser debugging
+      sourcemap: process.env.NODE_ENV === 'development' ? true : false, // Enable source maps for browser debugging
     },
   },
   build: {
-    sourcemap: true, // Enable source maps for Astro build output
+    sourcemap: process.env.NODE_ENV === 'development' ? true : false, // Enable source maps for Astro build output
   },
   integrations: [
     react(),
