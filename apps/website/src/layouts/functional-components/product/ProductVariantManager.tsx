@@ -54,10 +54,15 @@ export function ProductVariantManager({
 
           const processedVariants: ProcessedVariant[] = variants.map(
             (v: any) => {
+              // Use mapping ID as the primary id (needed for validation)
+              // The API returns id as mapping ID and variantId as actual variant ID
+              const mappingId = extractMappingId(v); // This is v.id from API
+              const variantId = normalizeVariantId(v.variantId); // This is the actual variant ID
+              
               const processed = {
-                id: extractVariantId(v),
-                mappingId: extractMappingId(v),
-                variantId: normalizeVariantId(v.variantId),
+                id: mappingId, // Use mapping ID for validation purposes
+                mappingId: mappingId,
+                variantId: variantId,
                 name: String(v.name || ""),
                 price: Number(v.price || 0),
                 stock: Number(v.stock || 0),
@@ -122,7 +127,7 @@ export function ProductVariantManager({
 
   return (
     <div>
-      {/* Variant Selector */}
+      {/* Variant Selector - Display variants between price and Add to Cart */}
       {processedVariants.length > 0 && (
         <div className="mb-6">
           <ProductVariantSelector
@@ -134,7 +139,7 @@ export function ProductVariantManager({
       )}
 
       {/* Add to Cart Button */}
-      <div className="flex gap-4 mt-8 md:mt-10 mb-6">
+      <div className="flex gap-4 mt-6 mb-6">
         <AddToCart
           product={product}
           stylesClass={stylesClass}

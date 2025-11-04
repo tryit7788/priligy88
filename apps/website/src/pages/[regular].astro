@@ -21,7 +21,13 @@ export async function getStaticPaths() {
 }
 
 const { page } = Astro.props;
-const { title, meta_title, description, image } = page?.data;
+
+// Handle case where page is undefined or doesn't exist
+if (!page || !page.data) {
+  return Astro.redirect("/404");
+}
+
+const { title, meta_title, description, image } = page.data;
 const { Content } = await render(page);
 ---
 

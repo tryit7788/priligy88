@@ -47,7 +47,7 @@ export function AddToCart({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           productId: product.id,
-          variantId: currentVariant?.id, // Use mapping ID for validation (this is the mapping ID)
+          variantId: currentVariant?.id || currentVariant?.mappingId, // Use mapping ID for validation
         }),
       });
       const data = await res.json();
@@ -96,6 +96,9 @@ export function AddToCart({
       };
 
       cartOperations.addItem(item as any);
+      
+      // Show success feedback (optional - could be enhanced with toast notification)
+      console.log("Item added to cart successfully:", item);
     } catch (error) {
       const errorMsg =
         error instanceof Error ? error.message : "Failed to add item to cart";
