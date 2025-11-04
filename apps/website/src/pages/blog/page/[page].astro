@@ -55,13 +55,7 @@ if (isNaN(currentPage) || currentPage < 1) {
 }
 
 // Fetch blogs with pagination
-const {
-  docs: blogs,
-  totalDocs,
-  totalPages,
-  hasNextPage,
-  hasPrevPage,
-} = await payload.find({
+const result = await payload.find({
   collection: "blogs",
   depth: 2,
   where: {
@@ -72,7 +66,23 @@ const {
   sort: "-createdAt",
   limit: BLOGS_PER_PAGE,
   page: currentPage,
+  overrideAccess: true, // Bypass access controls for server-side
 });
+
+// Populate tags for all blogs
+const { populateBlogTags } = await import("@/lib/blog");
+const blogsWithTags = await Promise.all(
+  result.docs.map((blog) => populateBlogTags(payload, blog))
+);
+
+const {
+  totalDocs,
+  totalPages,
+  hasNextPage,
+  hasPrevPage,
+} = result;
+
+const blogs = blogsWithTags;
 ---
 
 <Base title={`Blog - Page ${currentPage}`}>

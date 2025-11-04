@@ -37,9 +37,56 @@ try {
       },
     },
     depth: 2,
+    overrideAccess: true, // Bypass access controls for server-side
   });
 
   blog = result.docs[0];
+  
+  // Populate tags if they're not already populated
+  if (blog && blog.tags) {
+    const needsPopulation = blog.tags.some(
+      (tag: any) => typeof tag === "number" || 
+                   typeof tag === "string" ||
+                   (typeof tag === "object" && tag !== null && !tag.name),
+    );
+
+    if (needsPopulation) {
+      const tagIds = blog.tags
+        .map((tag: any) => {
+          if (typeof tag === "number" || typeof tag === "string") {
+            return tag;
+          }
+          if (typeof tag === "object" && tag !== null) {
+            return tag?.id || tag;
+          }
+          return null;
+        })
+        .filter((id: any) => id != null)
+        .map((id: any) => {
+          const num = Number(id);
+          return isNaN(num) ? id : num;
+        });
+
+      if (tagIds.length > 0) {
+        try {
+          const { docs: tagDocs } = await payloadClient.find({
+            collection: "blog-tags",
+            where: {
+              id: { in: tagIds },
+            },
+            limit: tagIds.length,
+            overrideAccess: true,
+          });
+          blog.tags = tagDocs;
+        } catch (error) {
+          console.error("Error populating blog tags:", error);
+          blog.tags = [];
+        }
+      } else {
+        blog.tags = [];
+      }
+    }
+  }
 } catch (error) {
   console.error("Error fetching blog:", error);
   return Astro.redirect("/404");

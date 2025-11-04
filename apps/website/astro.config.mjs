@@ -19,9 +19,6 @@ export default defineConfig({
   output: "server",
 
   vite: {
-    build: {
-      sourcemap: true, // ✅ enables source maps
-    },
     plugins: [tailwindcss()],
     ssr: {
       noExternal: ["react-image-crop"],
