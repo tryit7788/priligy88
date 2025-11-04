@@ -3,9 +3,6 @@ import { CollectionConfig } from 'payload';
 
 const ProductTags: CollectionConfig = {
     slug: 'product-tags',
-    access: {
-        read: () => true, // Allow public read access for frontend
-    },
     admin: {
         useAsTitle: 'name',
     },
