@@ -5,22 +5,47 @@ import { calculateTotalStock } from '../utils/stockUtils'
 // Helper function to calculate total stock from variant mappings
 async function calculateTotalStockFromMappings(
   variantMappings:
-    | (number | { id: number; quantity: number; isActive: boolean })[]
+    | (number | string | { id: number | string; quantity?: number; isActive?: boolean })[]
     | null
     | undefined,
-  req: { payload: any },
+  payloadInstance: any, // Accept payload instance directly instead of req
 ): Promise<number> {
   if (!variantMappings || variantMappings.length === 0) {
     return 0
   }
 
-  try {
-    // Get the actual mapping documents with quantities
-    const mappingIds = variantMappings.map((mapping) =>
-      typeof mapping === 'object' ? mapping.id : mapping,
-    )
+  if (!payloadInstance) {
+    console.warn('Payload instance not available for totalStock calculation')
+    return 0
+  }
 
-    const mappings = await req.payload.find({
+  try {
+    // Check if variantMappings are already populated with quantity and isActive
+    // If they are, we can calculate directly without fetching
+    const firstMapping = variantMappings[0]
+    if (
+      typeof firstMapping === 'object' &&
+      firstMapping !== null &&
+      'quantity' in firstMapping &&
+      'isActive' in firstMapping
+    ) {
+      // Already populated - calculate directly
+      // Filter to only objects with quantity and isActive, then cast for calculateTotalStock
+      const populatedMappings = variantMappings
+        .filter((m) => typeof m === 'object' && m !== null && 'quantity' in m && 'isActive' in m)
+        .map((m) => m as { quantity?: number; isActive?: boolean })
+      return calculateTotalStock(populatedMappings as any[])
+    }
+
+    // Need to fetch mapping documents - extract IDs
+    const mappingIds = variantMappings.map((mapping) => {
+      if (typeof mapping === 'object' && mapping !== null && 'id' in mapping) {
+        return mapping.id
+      }
+      return mapping
+    })
+
+    const mappings = await payloadInstance.find({
       collection: 'product-variant-mappings',
       where: {
         id: { in: mappingIds },
@@ -180,11 +205,14 @@ const Products: CollectionConfig = {
         // Preserve the stored totalStock value as fallback
         const storedTotalStock = doc.totalStock ?? 0
         
-        // Only calculate if we have variantMappings AND req.payload is available
-        if (doc.variantMappings && req?.payload) {
+        // Get payload instance - try req.payload first, then req if it's a payload instance
+        const payloadInstance = req?.payload || req
+        
+        // Only calculate if we have variantMappings AND payload instance is available
+        if (doc.variantMappings && payloadInstance) {
           try {
             // Only calculate total stock - this is lightweight and needed for admin
-            const calculatedStock = await calculateTotalStockFromMappings(doc.variantMappings, req)
+            const calculatedStock = await calculateTotalStockFromMappings(doc.variantMappings, payloadInstance)
             
             // Always use calculated value when calculation succeeds (even if 0, as that's accurate)
             doc.totalStock = calculatedStock
@@ -199,16 +227,23 @@ const Products: CollectionConfig = {
           }
         } else {
           doc.variantDetails = []
-          // If no variantMappings or no req.payload, preserve stored value instead of setting to 0
+          // If no variantMappings or no payload instance, preserve stored value instead of setting to 0
           // Only set to 0 if we explicitly know there are no variant mappings
-          if (!doc.variantMappings) {
+          if (!doc.variantMappings || doc.variantMappings.length === 0) {
             doc.totalStock = 0
           } else {
-            // variantMappings exists but req.payload is not available - preserve stored value
+            // variantMappings exists but payload instance is not available - preserve stored value
+            // This can happen when fetching via payloadClient.find() without req context
+            // However, if stored value is 0 but mappings exist, this might be a data inconsistency
+            // In production, we rely on the stored value which should be updated via afterChange hook
+            if (storedTotalStock === 0 && doc.variantMappings.length > 0) {
+              console.warn(
+                `Product ${doc.id} has variantMappings but totalStock is 0. This may indicate a calculation issue.`,
+              )
+            }
             doc.totalStock = storedTotalStock
           }
         }
-        console.log("[TRACE] doc.totalStock = ", doc.totalStock)
         return doc
       },
     ],
@@ -216,19 +251,21 @@ const Products: CollectionConfig = {
     afterChange: [
       async ({ doc, req, operation: _operation }) => {
         if (doc.variantMappings) {
-          const totalStock = await calculateTotalStockFromMappings(doc.variantMappings, req)
+          const payloadInstance = req?.payload || req
+          if (payloadInstance) {
+            const totalStock = await calculateTotalStockFromMappings(doc.variantMappings, payloadInstance)
 
-          // Only update if totalStock has changed to avoid infinite loops
-          if (doc.totalStock !== totalStock) {
-            await req.payload.update({
-              collection: 'products',
-              id: doc.id,
-              data: { totalStock },
-              overrideAccess: true,
-            })
+            // Only update if totalStock has changed to avoid infinite loops
+            if (doc.totalStock !== totalStock) {
+              await payloadInstance.update({
+                collection: 'products',
+                id: doc.id,
+                data: { totalStock },
+                overrideAccess: true,
+              })
+            }
           }
         }
-        console.log("[TRACE] doc.totalStock = ", doc.totalStock)
         return doc
       },
     ],
