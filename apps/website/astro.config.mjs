@@ -23,6 +23,12 @@ export default defineConfig({
     ssr: {
       noExternal: ["react-image-crop"],
     },
+    build: {
+      sourcemap: true, // Enable source maps for browser debugging
+    },
+  },
+  build: {
+    sourcemap: true, // Enable source maps for Astro build output
   },
   integrations: [
     react(),
