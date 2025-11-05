@@ -198,9 +198,12 @@ async function deductStockFromOrder(cartItems: CartItem[], products: any[]) {
           variantMapping.quantity - item.quantity,
         );
 
+        // Normalize mapping ID for database operation (handles ObjectIds and Buffers)
+        const normalizedMappingId = normalizeMappingId(variantMapping);
+
         await payloadClient.update({
           collection: "product-variant-mappings",
-          id: variantMapping.id,
+          id: normalizedMappingId,
           data: { quantity: newQuantity },
         });
       }
@@ -216,9 +219,12 @@ async function deductStockFromOrder(cartItems: CartItem[], products: any[]) {
           defaultMapping.quantity - item.quantity,
         );
 
+        // Normalize mapping ID for database operation (handles ObjectIds and Buffers)
+        const normalizedMappingId = normalizeMappingId(defaultMapping);
+
         await payloadClient.update({
           collection: "product-variant-mappings",
-          id: defaultMapping.id,
+          id: normalizedMappingId,
           data: { quantity: newQuantity },
         });
       }
@@ -247,9 +253,12 @@ async function restoreStockFromOrder(cartItems: CartItem[], products: any[]) {
         // Restore stock to variant mapping
         const newQuantity = variantMapping.quantity + item.quantity;
 
+        // Normalize mapping ID for database operation (handles ObjectIds and Buffers)
+        const normalizedMappingId = normalizeMappingId(variantMapping);
+
         await payloadClient.update({
           collection: "product-variant-mappings",
-          id: variantMapping.id,
+          id: normalizedMappingId,
           data: { quantity: newQuantity },
         });
       }
@@ -323,8 +332,10 @@ export const POST: APIRoute = async ({ request }) => {
     try {
       await deductStockFromOrder(cartItems, products);
     } catch (stockError) {
+      console.error("Error in deductStockFromOrder:", stockError);
+      const errorMessage = stockError instanceof Error ? stockError.message : "Failed to process stock deduction";
       return new Response(
-        JSON.stringify({ error: "Failed to process stock deduction" }),
+        JSON.stringify({ error: errorMessage }),
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
@@ -344,7 +355,12 @@ export const POST: APIRoute = async ({ request }) => {
 
       if (item.variant) {
         // Find the variant mapping for this product and variant using robust matching
-        const variantMapping = findVariantMapping(product.variantMappings, item.variant.id);
+        // Check both variant.id and variant.mappingId if available
+        const variantMapping = findVariantMapping(
+          product.variantMappings, 
+          item.variant.id,
+          (item.variant as any).mappingId
+        );
 
         if (variantMapping && typeof variantMapping !== "number") {
           // Use centralized pricing logic
