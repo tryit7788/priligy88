@@ -86,7 +86,7 @@ export const POST: APIRoute = async ({ request }) => {
         return String(mapping);
       };
       
-      const variantMapping = product.variantMappings?.find((mapping: any) => {
+      let variantMapping = product.variantMappings?.find((mapping: any) => {
         // Normalize mapping ID (handles Buffer objects)
         const mappingId = normalizeMappingId(mapping);
         const normalizedMappingId = normalizeVariantId(mappingId);
@@ -117,15 +117,55 @@ export const POST: APIRoute = async ({ request }) => {
         );
       }
 
-      // Check if variant is populated (should be with depth: 2)
-      if (!variantMapping.variant || typeof variantMapping.variant !== "object") {
+      // Check if variant is populated - if not, fetch it separately
+      let variant = null;
+      let finalVariantMapping = variantMapping;
+      
+      if (variantMapping.variant && typeof variantMapping.variant === "object") {
+        variant = variantMapping.variant;
+      } else {
+        // Variant is not populated, fetch the variant mapping separately with depth
+        // Get the mapping ID - could be from the mapping object or from the found variant
+        let mappingId: string;
+        
+        // If variantMapping is a Buffer or just an ID, use it directly
+        if (Buffer.isBuffer(variantMapping)) {
+          mappingId = variantMapping.toString('hex');
+        } else if (typeof variantMapping === "string" || typeof variantMapping === "number") {
+          mappingId = String(variantMapping);
+        } else {
+          // It's an object, get the ID
+          mappingId = normalizeMappingId(variantMapping);
+        }
+        
+        try {
+          const mappingResult = await payloadClient.findByID({
+            collection: "product-variant-mappings",
+            id: mappingId,
+            depth: 1, // Populate the variant relationship
+          });
+          
+          if (mappingResult?.variant && typeof mappingResult.variant === "object") {
+            variant = mappingResult.variant;
+            // Use the fully populated mapping result
+            finalVariantMapping = mappingResult;
+          }
+        } catch (error) {
+          // Failed to fetch variant mapping separately
+          // Will check variant again below
+        }
+      }
+      
+      // If variant is still not available, return error
+      if (!variant || typeof variant !== "object") {
         return new Response(
           JSON.stringify({ ok: false, error: "Variant data not available" }),
           { status: 400, headers: { "Content-Type": "application/json" } },
         );
       }
       
-      const variant = variantMapping.variant;
+      // Use the final variant mapping (either original or fetched)
+      variantMapping = finalVariantMapping;
       
       // Properly check availability - handle undefined/null values
       // isActive might be undefined, true, false, or a string
