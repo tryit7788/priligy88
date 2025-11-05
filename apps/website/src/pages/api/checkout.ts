@@ -201,13 +201,19 @@ async function deductStockFromOrder(cartItems: CartItem[], products: any[]) {
         // Normalize mapping ID for database operation (handles ObjectIds and Buffers)
         const normalizedMappingId = normalizeMappingId(variantMapping);
 
-        // Only update quantity field - do not include product or variant fields to avoid validation errors
+        // Create a clean data object with only the quantity field
+        // Explicitly construct to avoid any relation fields being included
+        const updateData: { quantity: number } = { 
+          quantity: newQuantity,
+        };
+
+        // Only update quantity field - use overrideAccess to bypass access control
+        // This ensures we can update without triggering relation field validations
         await payloadClient.update({
           collection: "product-variant-mappings",
           id: normalizedMappingId,
-          data: { 
-            quantity: newQuantity,
-          },
+          data: updateData,
+          overrideAccess: true,
         });
       }
     } else {
@@ -225,16 +231,17 @@ async function deductStockFromOrder(cartItems: CartItem[], products: any[]) {
         // Normalize mapping ID for database operation (handles ObjectIds and Buffers)
         const normalizedMappingId = normalizeMappingId(defaultMapping);
 
-        // Only update quantity field - exclude all relation fields to avoid validation errors
+        // Create a clean data object with only the quantity field
+        const updateData: { quantity: number } = { 
+          quantity: newQuantity,
+        };
+
+        // Only update quantity field - use overrideAccess to bypass access control
         await payloadClient.update({
           collection: "product-variant-mappings",
           id: normalizedMappingId,
-          data: { 
-            quantity: newQuantity,
-            // Explicitly exclude product and variant to prevent validation hook errors
-            product: undefined,
-            variant: undefined,
-          },
+          data: updateData,
+          overrideAccess: true,
         });
       }
     }
@@ -265,13 +272,17 @@ async function restoreStockFromOrder(cartItems: CartItem[], products: any[]) {
         // Normalize mapping ID for database operation (handles ObjectIds and Buffers)
         const normalizedMappingId = normalizeMappingId(variantMapping);
 
-        // Only update quantity field - do not include product or variant fields to avoid validation errors
+        // Create a clean data object with only the quantity field
+        const updateData: { quantity: number } = { 
+          quantity: newQuantity,
+        };
+
+        // Only update quantity field - use overrideAccess to bypass access control
         await payloadClient.update({
           collection: "product-variant-mappings",
           id: normalizedMappingId,
-          data: { 
-            quantity: newQuantity,
-          },
+          data: updateData,
+          overrideAccess: true,
         });
       }
     }

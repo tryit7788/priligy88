@@ -130,14 +130,37 @@ const ProductVariantMappings: CollectionConfig = {
     // Validate that the same variant isn't mapped twice to the same product
     beforeValidate: [
       async ({ data, req, operation: _operation, originalDoc }) => {
-        if (!data || !data.variant || !data.product) return data
-
-        // For updates, prevent changing the product
-        if (_operation === 'update' && originalDoc && originalDoc.product !== data.product) {
-          throw new Error(
-            'Cannot change the product of an existing variant mapping. Each variant mapping is tied to a specific product.',
-          )
+        // Skip validation if data is missing or relation fields are not being updated
+        // Only validate if product/variant are explicitly being changed
+        if (!data) return data
+        
+        // For updates, only check if product/variant are explicitly in the update data
+        // If they're not present, it means we're only updating other fields (like quantity)
+        if (_operation === 'update') {
+          // If product is not in the update data, skip product validation
+          if (!('product' in data)) {
+            // Remove product from data to prevent any issues
+            delete data.product
+          } else if (originalDoc && originalDoc.product !== data.product) {
+            // Only validate if product is explicitly being changed
+            throw new Error(
+              'Cannot change the product of an existing variant mapping. Each variant mapping is tied to a specific product.',
+            )
+          }
+          
+          // Same for variant
+          if (!('variant' in data)) {
+            delete data.variant
+          }
+          
+          // If neither product nor variant are being updated, skip the duplicate check
+          if (!('product' in data) && !('variant' in data)) {
+            return data
+          }
         }
+        
+        // For creates, or updates where product/variant are being changed, validate
+        if (!data.variant || !data.product) return data
 
         // Check if this exact product+variant combination already exists (for creates and updates)
         if (_operation === 'create' || (_operation === 'update' && originalDoc)) {
