@@ -149,6 +149,25 @@ const ProductVariantMappings: CollectionConfig = {
             return String(id)
           }
           
+          // Extract just the ID from a relation field (handles populated objects, IDs, etc.)
+          const extractRelationId = (value: any): string | number | undefined => {
+            if (!value) return undefined
+            if (typeof value === 'string' || typeof value === 'number') return value
+            if (typeof value === 'object' && value !== null) {
+              // If it's a populated object, use its id
+              if (value.id !== undefined) {
+                return typeof value.id === 'string' || typeof value.id === 'number' 
+                  ? value.id 
+                  : String(value.id)
+              }
+              // If it's a Buffer or ObjectId, convert to string
+              if (value.toString && typeof value.toString === 'function') {
+                return value.toString()
+              }
+            }
+            return undefined
+          }
+          
           // Check if product is being changed (compare normalized IDs)
           const hasProduct = 'product' in data && data.product !== undefined && data.product !== null
           if (hasProduct) {
@@ -161,15 +180,18 @@ const ProductVariantMappings: CollectionConfig = {
                 'Cannot change the product of an existing variant mapping. Each variant mapping is tied to a specific product.',
               )
             }
-            // If product is present but same, replace with original to ensure it matches exactly
-            // This prevents validation issues while keeping the required field
-            if (originalProductId === newProductId && originalDoc?.product) {
-              data.product = originalDoc.product
+            // If product is present but same, extract just the ID to avoid Buffer/Object issues
+            if (originalProductId === newProductId) {
+              const productId = extractRelationId(originalDoc?.product)
+              if (productId !== undefined) {
+                data.product = productId
+              }
             }
           } else {
-            // Product not in update - set to original value to satisfy required constraint
-            if (originalDoc?.product) {
-              data.product = originalDoc.product
+            // Product not in update - extract ID from original to satisfy required constraint
+            const productId = extractRelationId(originalDoc?.product)
+            if (productId !== undefined) {
+              data.product = productId
             }
           }
           
@@ -181,29 +203,40 @@ const ProductVariantMappings: CollectionConfig = {
             
             if (originalVariantId && newVariantId && originalVariantId !== newVariantId) {
               // Variant is being changed - this is also not allowed but we'll handle it gracefully
-              // Replace with original to prevent the change
-              if (originalDoc?.variant) {
-                data.variant = originalDoc.variant
+              // Extract just the ID from original to prevent the change
+              const variantId = extractRelationId(originalDoc?.variant)
+              if (variantId !== undefined) {
+                data.variant = variantId
               }
-            } else if (originalVariantId === newVariantId && originalDoc?.variant) {
-              data.variant = originalDoc.variant
+            } else if (originalVariantId === newVariantId) {
+              const variantId = extractRelationId(originalDoc?.variant)
+              if (variantId !== undefined) {
+                data.variant = variantId
+              }
             }
           } else {
-            // Variant not in update - set to original value to satisfy required constraint
-            if (originalDoc?.variant) {
-              data.variant = originalDoc.variant
+            // Variant not in update - extract ID from original to satisfy required constraint
+            const variantId = extractRelationId(originalDoc?.variant)
+            if (variantId !== undefined) {
+              data.variant = variantId
             }
           }
           
           // If neither product nor variant are being updated, skip the duplicate check
-          // But we still need to ensure they're set to original values for validation
+          // But we still need to ensure they're set to original IDs for validation
           if (!hasProduct && !hasVariant) {
-            // Ensure required fields are present with original values
-            if (originalDoc?.product && !data.product) {
-              data.product = originalDoc.product
+            // Ensure required fields are present with original IDs (not objects)
+            if (!data.product) {
+              const productId = extractRelationId(originalDoc?.product)
+              if (productId !== undefined) {
+                data.product = productId
+              }
             }
-            if (originalDoc?.variant && !data.variant) {
-              data.variant = originalDoc.variant
+            if (!data.variant) {
+              const variantId = extractRelationId(originalDoc?.variant)
+              if (variantId !== undefined) {
+                data.variant = variantId
+              }
             }
             return data
           }
