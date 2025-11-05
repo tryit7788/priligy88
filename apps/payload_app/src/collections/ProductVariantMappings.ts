@@ -161,13 +161,16 @@ const ProductVariantMappings: CollectionConfig = {
                 'Cannot change the product of an existing variant mapping. Each variant mapping is tied to a specific product.',
               )
             }
-            // If product is present but same, remove it to avoid duplicate check issues
-            if (originalProductId === newProductId) {
-              delete data.product
+            // If product is present but same, replace with original to ensure it matches exactly
+            // This prevents validation issues while keeping the required field
+            if (originalProductId === newProductId && originalDoc?.product) {
+              data.product = originalDoc.product
             }
           } else {
-            // Product not in update - remove it if it exists
-            delete data.product
+            // Product not in update - set to original value to satisfy required constraint
+            if (originalDoc?.product) {
+              data.product = originalDoc.product
+            }
           }
           
           // Same for variant
@@ -178,16 +181,30 @@ const ProductVariantMappings: CollectionConfig = {
             
             if (originalVariantId && newVariantId && originalVariantId !== newVariantId) {
               // Variant is being changed - this is also not allowed but we'll handle it gracefully
-              delete data.variant
-            } else if (originalVariantId === newVariantId) {
-              delete data.variant
+              // Replace with original to prevent the change
+              if (originalDoc?.variant) {
+                data.variant = originalDoc.variant
+              }
+            } else if (originalVariantId === newVariantId && originalDoc?.variant) {
+              data.variant = originalDoc.variant
             }
           } else {
-            delete data.variant
+            // Variant not in update - set to original value to satisfy required constraint
+            if (originalDoc?.variant) {
+              data.variant = originalDoc.variant
+            }
           }
           
           // If neither product nor variant are being updated, skip the duplicate check
+          // But we still need to ensure they're set to original values for validation
           if (!hasProduct && !hasVariant) {
+            // Ensure required fields are present with original values
+            if (originalDoc?.product && !data.product) {
+              data.product = originalDoc.product
+            }
+            if (originalDoc?.variant && !data.variant) {
+              data.variant = originalDoc.variant
+            }
             return data
           }
         }
