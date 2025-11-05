@@ -97,19 +97,78 @@ export const GET: APIRoute = async ({ params }) => {
     }
 
     // Get the variant mappings with their associated variants
-    // Normalize mapping IDs to handle both ObjectIds and string/number IDs
+    // Normalize mapping IDs to handle Buffer objects (raw MongoDB ObjectIds), ObjectId objects, and string/number IDs
     const mappingIds = product.variantMappings.map((mapping: any) => {
-      if (typeof mapping === "object" && mapping !== null) {
-        // Handle MongoDB ObjectId objects
-        if (typeof mapping.id === "object" && mapping.id !== null && typeof mapping.id.toString === "function") {
-          return mapping.id.toString();
-        }
-        return String(mapping.id || mapping);
+      // Handle Buffer objects (raw MongoDB ObjectId in binary format)
+      if (Buffer.isBuffer(mapping)) {
+        // Convert Buffer to hex string (24 character ObjectId)
+        const hexString = mapping.toString('hex');
+        console.log(`[API] Converted Buffer to hex string: ${hexString}`);
+        return hexString;
       }
+      
+      // Handle populated objects with id property
+      if (typeof mapping === "object" && mapping !== null) {
+        // If it has an id property, check what type it is
+        if (mapping.id !== undefined) {
+          // Handle Buffer in id property
+          if (Buffer.isBuffer(mapping.id)) {
+            const hexString = mapping.id.toString('hex');
+            console.log(`[API] Converted Buffer id to hex string: ${hexString}`);
+            return hexString;
+          }
+          // Handle ObjectId objects (they have toString method)
+          if (typeof mapping.id === "object" && mapping.id !== null && typeof mapping.id.toString === "function") {
+            // Try toHexString first (MongoDB ObjectId method)
+            if (typeof mapping.id.toHexString === "function") {
+              return mapping.id.toHexString();
+            }
+            // Fallback to toString
+            return mapping.id.toString();
+          }
+          // Already a string or number
+          return String(mapping.id);
+        }
+        // Object without id property - might be the ObjectId itself
+        if (Buffer.isBuffer(mapping)) {
+          return mapping.toString('hex');
+        }
+        // Try toString if available
+        if (typeof mapping.toString === "function") {
+          const str = mapping.toString();
+          // If toString() gives us a hex-like string, use it; otherwise might be ObjectId
+          if (/^[0-9a-fA-F]{24}$/.test(str)) {
+            return str;
+          }
+          // Might be ObjectId.toString() which returns hex
+          return str;
+        }
+        return String(mapping);
+      }
+      
+      // Handle string or number directly
       return String(mapping);
     }).filter(Boolean);
     
     console.log(`[API] Extracted ${mappingIds.length} mapping IDs:`, mappingIds);
+    
+    // Validate all IDs are 24-character hex strings
+    const invalidIds = mappingIds.filter((id: string) => !/^[0-9a-fA-F]{24}$/.test(String(id)));
+    if (invalidIds.length > 0) {
+      console.error(`[API] Invalid ObjectId formats detected:`, invalidIds);
+      // Filter out invalid IDs to prevent query errors
+      const validIds = mappingIds.filter((id: string) => /^[0-9a-fA-F]{24}$/.test(String(id)));
+      console.log(`[API] Filtered to ${validIds.length} valid ObjectIds`);
+      if (validIds.length === 0) {
+        return new Response(JSON.stringify({ variants: [] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      // Use only valid IDs
+      mappingIds.length = 0;
+      mappingIds.push(...validIds);
+    }
 
     if (mappingIds.length === 0) {
       console.warn(`[API] No mapping IDs found for product ${productId}`);
