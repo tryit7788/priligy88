@@ -149,26 +149,75 @@ const ProductVariantMappings: CollectionConfig = {
             return String(id)
           }
           
-          // Extract just the ID from a relation field (handles populated objects, IDs, etc.)
-          const extractRelationId = (value: any): string | number | undefined => {
+          // Extract just the ID from a relation field (handles populated objects, IDs, Buffers, etc.)
+          // Always returns a string to avoid Buffer/ObjectId issues
+          const extractRelationId = (value: any): string | undefined => {
             if (!value) return undefined
-            if (typeof value === 'string' || typeof value === 'number') return value
+            if (typeof value === 'string') return value
+            if (typeof value === 'number') return String(value)
             if (typeof value === 'object' && value !== null) {
+              // Check if it's a Buffer first (Buffers have specific methods)
+              if (Buffer.isBuffer(value)) {
+                // Convert Buffer to hex string (24 chars for ObjectId)
+                return value.toString('hex')
+              }
               // If it's a populated object, use its id
               if (value.id !== undefined) {
-                return typeof value.id === 'string' || typeof value.id === 'number' 
-                  ? value.id 
-                  : String(value.id)
+                const idValue = value.id
+                // Recursively extract if id is also an object
+                if (typeof idValue === 'string') {
+                  return idValue
+                }
+                if (typeof idValue === 'number') {
+                  return String(idValue)
+                }
+                if (Buffer.isBuffer(idValue)) {
+                  return idValue.toString('hex')
+                }
+                if (typeof idValue === 'object' && idValue !== null) {
+                  if (Buffer.isBuffer(idValue)) {
+                    return idValue.toString('hex')
+                  }
+                  if (idValue.toString && typeof idValue.toString === 'function') {
+                    const str = idValue.toString()
+                    // Ensure the result is a string, not another Buffer
+                    if (typeof str === 'string') {
+                      return str
+                    }
+                    if (Buffer.isBuffer(str)) {
+                      return str.toString('hex')
+                    }
+                    return String(str)
+                  }
+                }
+                return String(idValue)
               }
-              // If it's a Buffer or ObjectId, convert to string
+              // If it's an ObjectId or similar, convert to string
               if (value.toString && typeof value.toString === 'function') {
-                return value.toString()
+                const str = value.toString()
+                // Ensure the result is a string
+                if (typeof str === 'string') {
+                  return str
+                }
+                if (Buffer.isBuffer(str)) {
+                  return str.toString('hex')
+                }
+                return String(str)
               }
             }
             return undefined
           }
           
           // Check if product is being changed (compare normalized IDs)
+          // First, ensure data.product is a clean string if it exists
+          if ('product' in data && data.product !== undefined && data.product !== null) {
+            // Extract clean ID from data.product in case it's already a Buffer/object
+            const cleanProductId = extractRelationId(data.product)
+            if (cleanProductId) {
+              data.product = cleanProductId
+            }
+          }
+          
           const hasProduct = 'product' in data && data.product !== undefined && data.product !== null
           if (hasProduct) {
             const originalProductId = normalizeProductId(originalDoc?.product)
@@ -195,7 +244,15 @@ const ProductVariantMappings: CollectionConfig = {
             }
           }
           
-          // Same for variant
+          // Same for variant - ensure clean string first
+          if ('variant' in data && data.variant !== undefined && data.variant !== null) {
+            // Extract clean ID from data.variant in case it's already a Buffer/object
+            const cleanVariantId = extractRelationId(data.variant)
+            if (cleanVariantId) {
+              data.variant = cleanVariantId
+            }
+          }
+          
           const hasVariant = 'variant' in data && data.variant !== undefined && data.variant !== null
           if (hasVariant) {
             const originalVariantId = normalizeProductId(originalDoc?.variant)
@@ -245,10 +302,60 @@ const ProductVariantMappings: CollectionConfig = {
         // For creates, or updates where product/variant are being changed, validate
         if (!data.variant || !data.product) return data
 
+        // Extract clean IDs for the duplicate check query (ensure no Buffer objects)
+        // Use the same extraction logic but ensure strings
+        const extractRelationIdForQuery = (value: any): string | undefined => {
+          if (!value) return undefined
+          if (typeof value === 'string') return value
+          if (typeof value === 'number') return String(value)
+          if (typeof value === 'object' && value !== null) {
+            if (Buffer.isBuffer(value)) {
+              return value.toString('hex')
+            }
+            if (value.id !== undefined) {
+              const idValue = value.id
+              if (typeof idValue === 'string') return idValue
+              if (typeof idValue === 'number') return String(idValue)
+              if (Buffer.isBuffer(idValue)) {
+                return idValue.toString('hex')
+              }
+              if (typeof idValue === 'object' && idValue !== null) {
+                if (Buffer.isBuffer(idValue)) {
+                  return idValue.toString('hex')
+                }
+                if (idValue.toString && typeof idValue.toString === 'function') {
+                  const str = idValue.toString()
+                  if (typeof str === 'string') return str
+                  if (Buffer.isBuffer(str)) {
+                    return str.toString('hex')
+                  }
+                  return String(str)
+                }
+              }
+              return String(idValue)
+            }
+            if (value.toString && typeof value.toString === 'function') {
+              const str = value.toString()
+              if (typeof str === 'string') return str
+              if (Buffer.isBuffer(str)) {
+                return str.toString('hex')
+              }
+              return String(str)
+            }
+          }
+          return undefined
+        }
+        
+        const productIdForQuery = extractRelationIdForQuery(data.product)
+        const variantIdForQuery = extractRelationIdForQuery(data.variant)
+        
+        // Only proceed with duplicate check if we have valid IDs
+        if (!productIdForQuery || !variantIdForQuery) return data
+
         // Check if this exact product+variant combination already exists (for creates and updates)
         if (_operation === 'create' || (_operation === 'update' && originalDoc)) {
           const whereCondition: any = {
-            and: [{ variant: { equals: data.variant } }, { product: { equals: data.product } }],
+            and: [{ variant: { equals: variantIdForQuery } }, { product: { equals: productIdForQuery } }],
           }
 
           // For updates, exclude the current document
