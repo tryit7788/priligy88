@@ -3,9 +3,10 @@ export const prerender = false;
 import Base from "@/layouts/Base.astro";
 import { getSinglePage } from "@/lib/contentParser.astro";
 import PageHeader from "@/partials/PageHeader.astro";
-import { render } from "astro:content";
+import { render, getEntry } from "astro:content";
+import type { CollectionEntry } from "astro:content";
 
-// get static paths for all pages
+// get static paths for all pages (optional in SSR mode, but kept for compatibility)
 export async function getStaticPaths() {
   const COLLECTION_FOLDER = "pages";
 

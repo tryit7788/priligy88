@@ -1,3 +1,4 @@
+import type { Blog } from "payload_app";
 import { payload } from "@/lib/payload";
 
 // Helper function to populate blog tags if they're not already populated
@@ -155,4 +156,26 @@ export const getBlog = async (slug: string) => {
     ...result,
     docs: [blogWithTags],
   };
+};
+
+export const getAllBlogs = async (): Promise<Blog[]> => {
+  const payloadClient = await payload();
+
+  try {
+    const { docs } = await payloadClient.find({
+      collection: "blogs",
+      where: {
+        published: {
+          equals: true,
+        },
+      },
+      limit: 1000,
+      sort: "-updatedAt",
+    });
+
+    return docs as Blog[];
+  } catch (error) {
+    console.error("Error fetching blogs for sitemap:", error);
+    return [];
+  }
 };
