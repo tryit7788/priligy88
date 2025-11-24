@@ -106,7 +106,7 @@ export async function getStaticPaths() {
 **Product Pagination (SSG)**:
 ```typescript
 // apps/website/src/pages/products/page/[page].astro
-export const prerender = true; // Static generation
+export const prerender = false; // Static generation
 
 export async function getStaticPaths() {
   const result = await getProducts({ cursor: "1" });

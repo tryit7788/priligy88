@@ -21,35 +21,10 @@ export async function getStaticPaths() {
   return paths;
 }
 
-// In SSR mode, fetch the page dynamically if not provided via props
-let page: CollectionEntry<"pages"> | undefined = Astro.props?.page as CollectionEntry<"pages"> | undefined;
+const { page } = Astro.props;
 
-if (!page) {
-  const { regular } = Astro.params;
-  if (!regular) {
-    return Astro.redirect("/404");
-  }
-
-  try {
-    const fetchedPage = await getEntry("pages", regular);
-    
-    if (!fetchedPage) {
-      return Astro.redirect("/404");
-    }
-    
-    // Check if page is a draft
-    if (fetchedPage.data.draft === true) {
-      return Astro.redirect("/404");
-    }
-    
-    page = fetchedPage;
-  } catch (error) {
-    console.error(`Error fetching page "${regular}":`, error);
-    return Astro.redirect("/404");
-  }
-}
-
-if (!page) {
+// Handle case where page is undefined or doesn't exist
+if (!page || !page.data) {
   return Astro.redirect("/404");
 }
 

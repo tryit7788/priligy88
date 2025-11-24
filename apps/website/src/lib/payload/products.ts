@@ -6,6 +6,109 @@ export interface PageInfo {
   endCursor: string | null;
 }
 
+// Helper function to normalize IDs (handles Buffer/ObjectId, string, number, or object with id)
+function normalizeId(id: any): string | number {
+  // Handle Buffer (MongoDB ObjectId binary format)
+  if (Buffer.isBuffer(id)) {
+    return id.toString('hex')
+  }
+  
+  // Handle object with id property
+  if (typeof id === 'object' && id !== null && 'id' in id) {
+    return normalizeId(id.id)
+  }
+  
+  // Handle string or number
+  if (typeof id === 'string' || typeof id === 'number') {
+    return id
+  }
+  
+  // Fallback: try to convert to string
+  return String(id)
+}
+
+// Helper function to populate tags if they're not already populated
+async function populateTags(
+  payloadClient: any,
+  product: any,
+): Promise<any> {
+  if (!product.tags || !Array.isArray(product.tags)) {
+    return product;
+  }
+
+  // Check if tags are already populated (objects with name/slug) or just IDs (numbers)
+  const needsPopulation = product.tags.some(
+    (tag: any) => typeof tag === "number" || (typeof tag === "object" && tag !== null && !tag.name),
+  );
+
+  if (!needsPopulation) {
+    // Tags are already populated
+    return product;
+  }
+
+  // Extract and normalize tag IDs (handles Buffer/ObjectId, string, number, or object with id)
+  const tagIds = product.tags
+    .map((tag: any) => normalizeId(tag))
+    .filter((id: any) => id != null && id !== '')
+
+  if (tagIds.length === 0) {
+    product.tags = [];
+    return product;
+  }
+
+  // Fetch the tag documents
+  try {
+    // Convert tagIds - handle both hex strings (ObjectIds) and numeric strings
+    // For MongoDB ObjectIds (24 char hex), keep as string
+    // For numeric IDs, convert to number
+    const normalizedTagIds = tagIds.map((id: string | number) => {
+      if (typeof id === 'number') {
+        return id
+      }
+      // If it's a 24-character hex string (ObjectId), keep as string
+      if (typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id)) {
+        return id
+      }
+      // Try to convert to number if it's numeric
+      const num = Number(id)
+      return isNaN(num) ? id : num
+    });
+
+    const { docs: tagDocs } = await payloadClient.find({
+      collection: "product-tags",
+      where: {
+        id: { in: normalizedTagIds },
+      },
+      limit: tagIds.length,
+      overrideAccess: true, // Bypass access controls since this is server-side
+    });
+
+    if (tagDocs.length === 0) {
+      console.warn(
+        `No tags found for IDs: ${tagIds.join(", ")} for product ${product.id || product.title}`,
+      );
+      product.tags = [];
+      return product;
+    }
+
+    // Replace tags with populated objects
+    product.tags = tagDocs;
+    console.log(
+      `Successfully populated ${tagDocs.length} tags for product ${product.id || product.title}`,
+    );
+  } catch (error) {
+    console.error(
+      `Error populating tags for product ${product.id || product.title}:`,
+      error,
+    );
+    console.error("Tag IDs that failed:", tagIds);
+    // Clear tags if population fails to avoid showing invalid data
+    product.tags = [];
+  }
+
+  return product;
+}
+
 interface ProductQuery {
   price?: {
     min: number;
@@ -129,8 +232,13 @@ export async function getProducts({
       page: cursor ? parseInt(cursor, 10) : 1, // Use 'page' for pagination
     });
 
+    // Populate tags for all products
+    const productsWithTags = await Promise.all(
+      result.docs.map((product) => populateTags(payloadClient, product)),
+    );
+
     return {
-      products: result.docs as Product[],
+      products: productsWithTags as Product[],
       pageInfo: {
         hasNextPage: result.hasNextPage,
         endCursor: result.nextPage ? result.nextPage.toString() : null,
@@ -176,8 +284,13 @@ export async function getCollectionProducts({
     depth: 2,
   });
 
+  // Populate tags for all products
+  const productsWithTags = await Promise.all(
+    products.docs.map((product) => populateTags(payloadClient, product)),
+  );
+
   return {
-    products: products.docs,
+    products: productsWithTags,
     pageInfo: {
       hasNextPage: products.hasNextPage,
       endCursor: products.nextPage?.toString(),
@@ -222,6 +335,16 @@ export async function getVendors() {
   return brands.docs;
 }
 
+export async function getTags() {
+  const payloadClient = await payload();
+
+  const tags = await payloadClient.find({
+    collection: "product-tags",
+  });
+
+  return tags.docs;
+}
+
 export async function getAllProducts() {
   const payloadClient = await payload();
 
@@ -252,7 +375,11 @@ export async function getAllProducts() {
         depth: 2,
         limit: 1000,
       });
-      return docs;
+      // Populate tags for all products
+      const productsWithTags = await Promise.all(
+        docs.map((product) => populateTags(payloadClient, product)),
+      );
+      return productsWithTags;
     } else {
       // Handle pagination for large datasets
       const allProducts: any[] = [];
@@ -272,7 +399,11 @@ export async function getAllProducts() {
           page: page,
         });
 
-        allProducts.push(...result.docs);
+        // Populate tags for products in this batch
+        const productsWithTags = await Promise.all(
+          result.docs.map((product) => populateTags(payloadClient, product)),
+        );
+        allProducts.push(...productsWithTags);
         hasMore = result.hasNextPage;
         page++;
 
@@ -312,7 +443,8 @@ export async function getProductBySlug(slug: string) {
 
     if (docs.length > 0) {
       console.log(`✅ Found product with slug: "${slug}" - ${docs[0].title}`);
-      return docs[0];
+      const product = await populateTags(payloadClient, docs[0]);
+      return product;
     }
 
     // If not found, try to find by similar pattern (auto-correct slug)
@@ -335,7 +467,7 @@ export async function getProductBySlug(slug: string) {
     });
 
     if (similarDocs.length > 0) {
-      const foundProduct = similarDocs[0];
+      const foundProduct = await populateTags(payloadClient, similarDocs[0]);
       console.log(
         `🔄 Auto-corrected slug from "${slug}" to "${foundProduct.slug}"`,
       );
@@ -371,7 +503,7 @@ export async function getProductBySlug(slug: string) {
       });
 
       // Return the first match as fallback
-      const fallbackProduct = broadDocs[0];
+      const fallbackProduct = await populateTags(payloadClient, broadDocs[0]);
       console.log(`🎯 Using fallback: "${fallbackProduct.slug}"`);
       return fallbackProduct;
     }
@@ -385,8 +517,8 @@ export async function getProductBySlug(slug: string) {
 }
 
 export async function getRelatedProducts(
-  currentProductId: number,
-  categoryId: number,
+  currentProductId: string | number,
+  categoryId: string | number,
 ) {
   const payloadClient = await payload();
   const { docs } = await payloadClient.find({
@@ -405,5 +537,9 @@ export async function getRelatedProducts(
     limit: 8, // Fetch up to 4 related products
     depth: 2,
   });
-  return docs;
+  // Populate tags for all related products
+  const productsWithTags = await Promise.all(
+    docs.map((product) => populateTags(payloadClient, product)),
+  );
+  return productsWithTags;
 }

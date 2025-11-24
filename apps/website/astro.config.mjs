@@ -21,8 +21,14 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
     ssr: {
-      noExternal: ["react-image-crop"],
+      noExternal: ["react-image-crop"]
     },
+    build: {
+      sourcemap: process.env.NODE_ENV === 'development' ? true : false, // Enable source maps for browser debugging
+    },
+  },
+  build: {
+    sourcemap: process.env.NODE_ENV === 'development' ? true : false, // Enable source maps for Astro build output
   },
   integrations: [
     react(),

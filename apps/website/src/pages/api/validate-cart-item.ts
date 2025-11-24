@@ -25,9 +25,12 @@ export const POST: APIRoute = async ({ request }) => {
       where: {
         and: [{ id: { equals: productId } }, { published: { equals: true } }],
       },
-      depth: 2,
+      depth: 2, // Populate variantMappings and their variants
       limit: 1,
     });
+    
+    // Note: depth: 2 should populate variantMappings, but if they're still Buffer objects,
+    // we'll handle that in the variant mapping lookup
 
     const product = result?.docs?.[0] as any;
     if (!product) {
@@ -52,14 +55,56 @@ export const POST: APIRoute = async ({ request }) => {
     if (variantId) {
       // Find the variant mapping that corresponds to the variantId
       // The variantId could be either a mapping ID or actual variant ID
-      const variantMapping = product.variantMappings?.find((mapping: any) => {
-        const mappingId = String(mapping.id);
-        const actualVariantId = String(mapping.variant?.id);
-        const searchId = String(variantId);
+      // Normalize variantMappings first to handle Buffer objects
+      const normalizedVariantId = normalizeVariantId(variantId);
+      
+      // Helper function to normalize mapping ID (handles Buffer objects)
+      const normalizeMappingId = (mapping: any): string => {
+        if (Buffer.isBuffer(mapping)) {
+          return mapping.toString('hex');
+        }
+        if (typeof mapping === "object" && mapping !== null) {
+          if (mapping.id !== undefined) {
+            if (Buffer.isBuffer(mapping.id)) {
+              return mapping.id.toString('hex');
+            }
+            if (typeof mapping.id === "object" && mapping.id !== null) {
+              if (typeof mapping.id.toHexString === "function") {
+                return mapping.id.toHexString();
+              }
+              if (typeof mapping.id.toString === "function") {
+                return mapping.id.toString();
+              }
+            }
+            return String(mapping.id);
+          }
+          // Object without id - might be Buffer
+          if (Buffer.isBuffer(mapping)) {
+            return mapping.toString('hex');
+          }
+        }
+        return String(mapping);
+      };
+      
+      let variantMapping = product.variantMappings?.find((mapping: any) => {
+        // Normalize mapping ID (handles Buffer objects)
+        const mappingId = normalizeMappingId(mapping);
+        const normalizedMappingId = normalizeVariantId(mappingId);
+        
+        // Normalize actual variant ID if it exists
+        let normalizedActualVariantId = "";
+        if (mapping.variant?.id !== undefined) {
+          if (Buffer.isBuffer(mapping.variant.id)) {
+            normalizedActualVariantId = mapping.variant.id.toString('hex');
+          } else {
+            normalizedActualVariantId = normalizeVariantId(mapping.variant.id);
+          }
+        }
 
+        // Compare normalized IDs
         return (
-          mappingId === searchId ||
-          actualVariantId === searchId ||
+          normalizedMappingId === normalizedVariantId ||
+          normalizedActualVariantId === normalizedVariantId ||
           compareVariantIds(mapping.variant?.id, variantId) ||
           compareVariantIds(mapping.id, variantId)
         );
@@ -72,10 +117,70 @@ export const POST: APIRoute = async ({ request }) => {
         );
       }
 
-      const variant = variantMapping.variant;
-      const available =
-        Boolean(variantMapping.isActive) &&
-        Boolean(variantMapping.quantity > 0);
+      // Check if variant is populated - if not, fetch it separately
+      let variant = null;
+      let finalVariantMapping = variantMapping;
+      
+      if (variantMapping.variant && typeof variantMapping.variant === "object") {
+        variant = variantMapping.variant;
+      } else {
+        // Variant is not populated, fetch the variant mapping separately with depth
+        // Get the mapping ID - could be from the mapping object or from the found variant
+        let mappingId: string;
+        
+        // If variantMapping is a Buffer or just an ID, use it directly
+        if (Buffer.isBuffer(variantMapping)) {
+          mappingId = variantMapping.toString('hex');
+        } else if (typeof variantMapping === "string" || typeof variantMapping === "number") {
+          mappingId = String(variantMapping);
+        } else {
+          // It's an object, get the ID
+          mappingId = normalizeMappingId(variantMapping);
+        }
+        
+        try {
+          const mappingResult = await payloadClient.findByID({
+            collection: "product-variant-mappings",
+            id: mappingId,
+            depth: 1, // Populate the variant relationship
+          });
+          
+          if (mappingResult?.variant && typeof mappingResult.variant === "object") {
+            variant = mappingResult.variant;
+            // Use the fully populated mapping result
+            finalVariantMapping = mappingResult;
+          }
+        } catch (error) {
+          // Failed to fetch variant mapping separately
+          // Will check variant again below
+        }
+      }
+      
+      // If variant is still not available, return error
+      if (!variant || typeof variant !== "object") {
+        return new Response(
+          JSON.stringify({ ok: false, error: "Variant data not available" }),
+          { status: 400, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      
+      // Use the final variant mapping (either original or fetched)
+      variantMapping = finalVariantMapping;
+      
+      // Properly check availability - handle undefined/null values
+      // isActive might be undefined, true, false, or a string
+      const isActive = variantMapping.isActive !== undefined && variantMapping.isActive !== null
+        ? (variantMapping.isActive === true || variantMapping.isActive === "true" || variantMapping.isActive === 1 || String(variantMapping.isActive).toLowerCase() === "true")
+        : true; // Default to true if not specified (assuming active if not explicitly set to false)
+      
+      // Convert quantity to number and check if it's greater than 0
+      // Handle cases where quantity might be undefined, null, or a string
+      const quantity = variantMapping.quantity !== undefined && variantMapping.quantity !== null
+        ? Number(variantMapping.quantity)
+        : 0;
+      const hasStock = !isNaN(quantity) && quantity > 0;
+      
+      const available = isActive && hasStock;
 
       if (!available) {
         return new Response(

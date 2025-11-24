@@ -26,5 +26,5 @@ export async function GET() {
   }
 }
 
-// Use SSR for dynamic product data
+// Tell Astro to generate this as a static endpoint
 export const prerender = false;

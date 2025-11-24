@@ -27,7 +27,7 @@ export function ProductVariantSelector({
     if (!mounted) return;
 
     if (variants.length > 0 && !selected) {
-      console.log("Setting up variants for first time");
+      // console.log("Setting up variants for first time");
 
       try {
         const defaultVariant = variants.find((v) => v.isDefault) || variants[0];
@@ -37,14 +37,14 @@ export function ProductVariantSelector({
           defaultVariant.name &&
           typeof defaultVariant.price === "number"
         ) {
-          console.log("Setting default variant:", defaultVariant.name);
+          // console.log("Setting default variant:", defaultVariant.name);
           setSelected(defaultVariant);
           onVariantChange(defaultVariant);
         } else {
-          console.warn("Invalid variant data:", defaultVariant);
+          // console.warn("Invalid variant data:", defaultVariant);
         }
       } catch (error) {
-        console.error("Error setting default variant:", error);
+        // console.error("Error setting default variant:", error);
       }
     }
   }, [variants, mounted]); // Removed onVariantChange and selected dependencies
@@ -88,7 +88,7 @@ export function ProductVariantSelector({
   return (
     <div className="mb-6">
       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-        Select Option:
+        選擇選項:
       </label>
       <div className="relative">
         <button
@@ -99,7 +99,7 @@ export function ProductVariantSelector({
           aria-expanded={isOpen}
         >
           <span className="block truncate text-gray-900 dark:text-gray-100">
-            {selected ? getVariantDisplayText(selected) : "Select an option"}
+            {selected ? getVariantDisplayText(selected) : "請選擇選項"}
           </span>
           <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
             <svg
@@ -137,12 +137,12 @@ export function ProductVariantSelector({
                       : "text-gray-900 dark:text-gray-100"
                   } ${!variant.availableForSale ? "opacity-50 cursor-not-allowed" : ""}`}
                   onClick={() => {
-                    console.log(
-                      "Clicked on variant:",
-                      variant.name,
-                      "ID:",
-                      variant.id,
-                    );
+                    // console.log(
+                    //   "Clicked on variant:",
+                    //   variant.name,
+                    //   "ID:",
+                    //   variant.id,
+                    // );
                     if (variant.availableForSale) {
                       handleVariantChange(variant);
                     }
@@ -160,7 +160,7 @@ export function ProductVariantSelector({
                   </div>
                   {!variant.availableForSale && (
                     <span className="text-xs text-red-500 ml-2">
-                      (Not Available)
+                      (不可用)
                     </span>
                   )}
                   {isSelected && (
@@ -187,17 +187,16 @@ export function ProductVariantSelector({
       </div>
 
       {selected && (
-        <div
-          key={selected.id}
-          className="mt-2 text-sm text-gray-600 dark:text-gray-400"
-        >
+        <div key={selected.id} className="mt-3 flex items-center gap-2">
           {selected.stock > 0 ? (
-            <span className="text-green-600 dark:text-green-400">
-              {selected.stock} in stock
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800">
+              <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+              {selected.stock} 件現貨
             </span>
           ) : (
-            <span className="text-red-600 dark:text-red-400">
-              Not available
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800">
+              <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+              缺貨
             </span>
           )}
         </div>

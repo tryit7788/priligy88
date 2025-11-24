@@ -6,7 +6,7 @@ import type {
   ProcessedVariant,
   CartItemWithVariant,
 } from "@/lib/shopify/types";
-import { normalizeVariantId } from "@/lib/utils/variantId";
+import { normalizeVariantId, normalizeId } from "@/lib/utils/variantId";
 import { getProductPrice, isValidPrice } from "@/lib/utils/pricing";
 
 interface AddToCartProps {
@@ -41,19 +41,28 @@ export function AddToCart({
     setError(null);
 
     try {
+      // Normalize product ID to string (handles MongoDB ObjectIds)
+      console.log('[Trace] product.id = ', product.id);
+      const productId = normalizeId(product.id);
+      console.log('[Trace] productId = ', productId);
+      if (!productId) {
+        setError("Invalid product ID");
+        return;
+      }
+      
       // Server-side validate price/stock
       const res = await fetch("/api/validate-cart-item", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          productId: product.id,
-          variantId: currentVariant?.id, // Use mapping ID for validation (this is the mapping ID)
+          productId: productId,
+          variantId: currentVariant?.id || currentVariant?.mappingId, // Use mapping ID for validation
         }),
       });
       const data = await res.json();
       if (!res.ok || !data?.ok) {
         const errorMsg = data?.error || "Validation failed";
-        console.error(errorMsg);
+        // console.error(errorMsg);
         setError(errorMsg);
         return;
       }
@@ -65,7 +74,7 @@ export function AddToCart({
       // Validate the price
       if (!isValidPrice(validatedPrice)) {
         const errorMsg = "Invalid price received from validation";
-        console.error(errorMsg);
+        // console.error(errorMsg);
         setError(errorMsg);
         return;
       }
@@ -82,24 +91,34 @@ export function AddToCart({
             }
           : null;
 
+      // Get image URL safely
+      let imageUrl = "";
+      if (product.featuredImage) {
+        if (typeof product.featuredImage === "object" && product.featuredImage !== null && "url" in product.featuredImage) {
+          imageUrl = product.featuredImage.url || "";
+        } else if (typeof product.featuredImage === "string") {
+          imageUrl = product.featuredImage;
+        }
+      }
+
       const item: CartItemWithVariant = {
-        id: product.id,
+        id: productId, // Use normalized product ID (string for MongoDB ObjectId)
         title: product.title,
         price: validatedPrice,
         quantity: 1,
-        image:
-          typeof product.featuredImage === "number"
-            ? ""
-            : product.featuredImage?.url || "",
+        image: imageUrl,
         slug: product.slug || undefined,
         variant: variantInfo,
       };
 
       cartOperations.addItem(item as any);
+      
+      // Show success feedback (optional - could be enhanced with toast notification)
+      // console.log("Item added to cart successfully:", item);
     } catch (error) {
       const errorMsg =
         error instanceof Error ? error.message : "Failed to add item to cart";
-      console.error(errorMsg, error);
+      // console.error(errorMsg, error);
       setError(errorMsg);
     } finally {
       setPending(false);
@@ -110,6 +129,8 @@ export function AddToCart({
   const isAvailable = currentVariant
     ? currentVariant.stock > 0
     : product.published && (product.totalStock || 0) > 0;
+  
+  // console.log("[TRACE] product.totalStock = ", product.totalStock)
 
   const buttonClasses = `${stylesClass} ${
     pending || !isAvailable ? "cursor-not-allowed" : ""

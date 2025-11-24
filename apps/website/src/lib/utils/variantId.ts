@@ -1,7 +1,6 @@
 /**
  * Centralized variant ID utilities to ensure consistency across the application
  */
-
 export type VariantId = string | number;
 
 /**
@@ -39,4 +38,23 @@ export function extractVariantId(variantDetail: any): string {
 export function extractMappingId(variantDetail: any): string {
   // For mapping operations, we need the mapping ID (not the variant ID)
   return normalizeVariantId(variantDetail?.id);
+}
+
+/**
+* Recursively converts MongoDB ObjectIds to strings.
+* Useful before returning data to client or serializing to JSON.
+*/
+export function normalizeId(id: any): string {
+ if (id == null) return id;
+
+ if (typeof id === 'object' && 'buffer' in id && id.buffer instanceof Uint8Array) {
+  // build mode: you kept it as an ObjectId
+  return Array.from(id.buffer, b => b.toString(16).padStart(2, '0')).join('');
+} else if (typeof id === 'string') {
+  // dev/watch mode: serialized to string
+  return id;
+}
+
+ // Primitive types stay the same
+ return id;
 }

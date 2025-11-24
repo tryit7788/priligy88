@@ -37,9 +37,81 @@ try {
       },
     },
     depth: 2,
+    overrideAccess: true, // Bypass access controls for server-side
   });
 
   blog = result.docs[0];
+  
+  // Populate tags if they're not already populated
+  if (blog && blog.tags) {
+    const needsPopulation = blog.tags.some(
+      (tag: any) => typeof tag === "number" || 
+                   typeof tag === "string" ||
+                   (typeof tag === "object" && tag !== null && !tag.name),
+    );
+
+    if (needsPopulation) {
+      const tagIds = blog.tags
+        .map((tag: any) => {
+          if (typeof tag === "number") {
+            return tag;
+          }
+          if (typeof tag === "string") {
+            return tag;
+          }
+          if (typeof tag === "object" && tag !== null) {
+            // Handle ObjectId or Buffer (MongoDB)
+            if (Buffer.isBuffer(tag)) {
+              return tag.toString('hex');
+            }
+            // Check if it's an ObjectId
+            if (tag.toString && typeof tag.toString === 'function' && tag._bsontype === 'ObjectId') {
+              return tag.toString();
+            }
+            // If object has id property
+            if (tag.id) {
+              const id = tag.id;
+              if (Buffer.isBuffer(id)) {
+                return id.toString('hex');
+              }
+              if (id.toString && typeof id.toString === 'function' && id._bsontype === 'ObjectId') {
+                return id.toString();
+              }
+              return id;
+            }
+            // Try to convert object to string if it looks like ObjectId
+            if (tag.toString && typeof tag.toString === 'function') {
+              const str = tag.toString();
+              if (/^[0-9a-fA-F]{24}$/.test(str)) {
+                return str;
+              }
+            }
+            return tag;
+          }
+          return null;
+        })
+        .filter((id: any) => id != null);
+
+      if (tagIds.length > 0) {
+        try {
+          const { docs: tagDocs } = await payloadClient.find({
+            collection: "blog-tags",
+            where: {
+              id: { in: tagIds },
+            },
+            limit: tagIds.length,
+            overrideAccess: true,
+          });
+          blog.tags = tagDocs;
+        } catch (error) {
+          console.error("Error populating blog tags:", error);
+          blog.tags = [];
+        }
+      } else {
+        blog.tags = [];
+      }
+    }
+  }
 } catch (error) {
   console.error("Error fetching blog:", error);
   return Astro.redirect("/404");

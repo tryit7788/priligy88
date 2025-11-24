@@ -10,6 +10,7 @@ import {
   getHighestProductPrice,
   getProducts,
   getVendors,
+  getTags,
   type PageInfo,
   getAllProducts,
 } from "@/lib/payload/products";
@@ -20,11 +21,12 @@ import type { Brand, Product, ProductCategory, ProductTag } from "payload_app";
 const currentPage = 1;
 
 // Fetch paginated products and other data
-const [productsResult, allCategories, allVendors, highestPrice, allProducts] =
+const [productsResult, allCategories, allVendors, allTags, highestPrice, allProducts] =
   await Promise.all([
     getProducts({ cursor: currentPage.toString() }),
     getCollections(),
     getVendors(),
+    getTags(),
     getHighestProductPrice(),
     getAllProducts(), // Still need all products for filter counts
   ]);
@@ -46,15 +48,8 @@ const categoriesWithCounts = allCategories.map((category) => {
   return { name: category.name, slug: category.slug, productCount: count };
 });
 
-// Extract unique tags from all products
-const tags: ProductTag[] = [
-  ...new Map(
-    allProducts
-      .flatMap((product: Product) => product.tags as ProductTag[])
-      .filter(Boolean)
-      .map((tag: ProductTag) => [tag.id, tag]),
-  ).values(),
-];
+// Use tags fetched directly from the collection
+const tags: ProductTag[] = allTags;
 
 const maxPriceData = {
   amount: highestPrice.toString(),
@@ -63,7 +58,7 @@ const maxPriceData = {
 
 // totalPages is now provided by the getProducts function from the database
 
-// Use SSR for dynamic product data
+// Tell Astro this is a static page
 export const prerender = false;
 ---
 
