@@ -14,7 +14,7 @@ const format = (val: string): string =>
     .replace(/^-/, '')
     .replace(/-$/, '')
 
-async function isTitleFound(title: string, collection: CollectionSlug) {
+async function isTitleFound(title: string, collection: CollectionSlug, excludeId?: string) {
   const db = await getPayload({
     config: await import('../payload.config.js').then((m) => m.default),
   })
@@ -24,6 +24,11 @@ async function isTitleFound(title: string, collection: CollectionSlug) {
       slug: {
         equals: title,
       },
+      ...(excludeId && {
+        id: {
+          not_equals: excludeId,
+        },
+      }),
     },
   })
 
@@ -31,9 +36,9 @@ async function isTitleFound(title: string, collection: CollectionSlug) {
   return false
 }
 
-async function getUniqueSlug(slug: string, collection: CollectionSlug) {
+async function getUniqueSlug(slug: string, collection: CollectionSlug, excludeId?: string) {
   let i = 2
-  let isFound = await isTitleFound(slug, collection)
+  let isFound = await isTitleFound(slug, collection, excludeId)
   const regex = /^.*-\d+$/
 
   while (isFound) {
@@ -47,7 +52,7 @@ async function getUniqueSlug(slug: string, collection: CollectionSlug) {
     } else {
       slug += `-${i}`
     }
-    isFound = await isTitleFound(slug, collection)
+    isFound = await isTitleFound(slug, collection, excludeId)
   }
 
   return slug
@@ -56,7 +61,9 @@ async function getUniqueSlug(slug: string, collection: CollectionSlug) {
 const formatSlug =
   (collection: CollectionSlug, fallback: string): FieldHook =>
   ({ operation, value, originalDoc, data }) => {
-    if (typeof value === 'string') return getUniqueSlug(format(value), collection)
+    const excludeId = operation === 'update' ? originalDoc?.id : undefined
+
+    if (typeof value === 'string') return getUniqueSlug(format(value), collection, excludeId)
 
     if (operation === 'create') {
       const fallbackData = data?.[fallback] || originalDoc?.[fallback]
