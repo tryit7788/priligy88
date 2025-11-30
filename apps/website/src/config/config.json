@@ -1,6 +1,6 @@
 {
   "site": {
-    "title": "必利勁藥局-提供早洩治療必利勁和壯陽藥|犀利士|樂威壯|威而鋼",
+    "title": "性福藥局-犀利士,必利勁,威而鋼,樂威壯治療早洩陽痿，貨到付款 24H發貨",
     "base_url": "https://100mg.tw/",
     "base_path": "/",
     "trailing_slash": false,
@@ -9,7 +9,7 @@
     "logo_darkmode": "/images/logo1.png",
     "logo_width": "150",
     "logo_height": "33",
-    "logo_text": "必利勁藥局"
+    "logo_text": "性福藥局"
   },
 
   "settings": {
@@ -22,7 +22,7 @@
 
   "params": {
     "contact_form_action": "/api/contact",
-    "copyright": "Copyright 2025 © 必利勁藥局"
+    "copyright": "Copyright 2025 © 性福藥局"
   },
 
   "navigation_button": {
@@ -32,9 +32,9 @@
   },
 
   "metadata": {
-    "meta_author": "必利勁藥局",
+    "meta_author": "性福藥局",
     "meta_image": "/images/logo1.png",
-    "meta_description": "本站銷售壯陽藥，犀利士，威而鋼，樂威壯，必利勁.壯陽藥副作用少價錢便宜。提供超商取件及黑貓貨到付款。"
+    "meta_description": "性福藥局-線上購犀利士,必利勁,威而鋼,樂威壯等壯陽藥，全站免運費 24H發貨 全家,7-11各門市取貨"
   },
 
   "shopify": {
