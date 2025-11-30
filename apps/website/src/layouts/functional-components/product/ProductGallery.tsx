@@ -1,4 +1,11 @@
-import React, { useEffect, useRef, useState, type JSX, type MouseEvent, type TouchEvent } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  type JSX,
+  type MouseEvent,
+  type TouchEvent,
+} from "react";
 import { FiZoomIn } from "react-icons/fi";
 import {
   HiOutlineArrowNarrowLeft,
@@ -34,22 +41,30 @@ interface CustomZoomImageProps {
   height: number;
 }
 
-const CustomZoomImage = ({ src, alt, width, height }: CustomZoomImageProps): JSX.Element => {
+const CustomZoomImage = ({
+  src,
+  alt,
+  width,
+  height,
+}: CustomZoomImageProps): JSX.Element => {
   const [isZoomed, setIsZoomed] = useState(false);
   const [position, setPosition] = useState<Position>({ x: 0.5, y: 0.5 });
   const [showMagnifier, setShowMagnifier] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
-  const [touchStartPosition, setTouchStartPosition] = useState<Position | null>(null);
+  const [touchStartPosition, setTouchStartPosition] = useState<Position | null>(
+    null,
+  );
   const [touchMoveCount, setTouchMoveCount] = useState(0);
   const imageRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    setIsTouchDevice("ontouchstart" in window || navigator.maxTouchPoints > 0);
   }, []);
 
   const updatePosition = (clientX: number, clientY: number): void => {
     if (!imageRef.current) return;
-    const { left, top, width, height } = imageRef.current.getBoundingClientRect();
+    const { left, top, width, height } =
+      imageRef.current.getBoundingClientRect();
     const x = Math.max(0, Math.min(1, (clientX - left) / width));
     const y = Math.max(0, Math.min(1, (clientY - top) / height));
     setPosition({ x, y });
@@ -74,7 +89,7 @@ const CustomZoomImage = ({ src, alt, width, height }: CustomZoomImageProps): JSX
     if (e.touches.length === 1) {
       const touch = e.touches[0];
       updatePosition(touch.clientX, touch.clientY);
-      setTouchMoveCount(prev => prev + 1);
+      setTouchMoveCount((prev) => prev + 1);
     }
   };
 
@@ -92,7 +107,7 @@ const CustomZoomImage = ({ src, alt, width, height }: CustomZoomImageProps): JSX
 
   return (
     <div
-      className={`relative w-full h-full overflow-hidden rounded-md ${!isZoomed && showMagnifier ? 'cursor-zoom-in' : isZoomed ? 'cursor-zoom-out' : ''}`}
+      className={`relative w-full h-full overflow-hidden rounded-md ${!isZoomed && showMagnifier ? "cursor-zoom-in" : isZoomed ? "cursor-zoom-out" : ""}`}
       ref={imageRef}
       onMouseEnter={() => !isTouchDevice && setShowMagnifier(true)}
       onMouseLeave={() => !isTouchDevice && setShowMagnifier(false)}
@@ -117,10 +132,10 @@ const CustomZoomImage = ({ src, alt, width, height }: CustomZoomImageProps): JSX
           style={{
             left: `${position.x * 100}%`,
             top: `${position.y * 100}%`,
-            transform: 'translate(-50%, -50%)',
-            pointerEvents: 'none',
-            width: isTouchDevice ? '40px' : '24px',
-            height: isTouchDevice ? '40px' : '24px'
+            transform: "translate(-50%, -50%)",
+            pointerEvents: "none",
+            width: isTouchDevice ? "40px" : "24px",
+            height: isTouchDevice ? "40px" : "24px",
           }}
         >
           <FiZoomIn size={isTouchDevice ? 24 : 16} />
@@ -132,7 +147,7 @@ const CustomZoomImage = ({ src, alt, width, height }: CustomZoomImageProps): JSX
           className="absolute top-0 left-0 right-0 bottom-0 cursor-zoom-out"
           style={{
             backgroundImage: `url(${src})`,
-            backgroundSize: '200% 200%',
+            backgroundSize: "200% 200%",
             backgroundPosition: `${position.x * 100}% ${position.y * 100}%`,
             zIndex: 10,
           }}
@@ -170,7 +185,7 @@ const ProductGallery = ({ images }: ProductGalleryProps): JSX.Element => {
       const params = new URLSearchParams(window.location.search);
       const searchParam = params.get("color");
       if (searchParam) {
-        setActiveIndex(prev=>prev !== -1 ? prev : 0);
+        setActiveIndex((prev) => (prev !== -1 ? prev : 0));
       }
       setLoadingThumb(false);
     };
@@ -185,15 +200,15 @@ const ProductGallery = ({ images }: ProductGalleryProps): JSX.Element => {
     };
   }, [altTextArray]);
 
-useEffect(() => {
-    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  useEffect(() => {
+    setIsTouchDevice("ontouchstart" in window || navigator.maxTouchPoints > 0);
     // Set initial picUrl
     if (images.length > 0) {
       setPicUrl(images?.[0].url!);
     }
   }, [images]);
 
-  const filteredImages = images
+  const filteredImages = images;
 
   const handleSlideChange = (swiper: TSwiper): void => {
     setActiveIndex(swiper.activeIndex);
@@ -201,7 +216,9 @@ useEffect(() => {
   };
 
   const handleThumbSlideClick = (clickedUrl: string): void => {
-    const foundIndex = filteredImages.findIndex((item) => item.url === clickedUrl);
+    const foundIndex = filteredImages.findIndex(
+      (item) => item.url === clickedUrl,
+    );
     if (foundIndex !== -1) {
       setActiveIndex(foundIndex);
     }
@@ -242,10 +259,11 @@ useEffect(() => {
             </SwiperSlide>
           ))}
           <div
-            className={`hidden lg:block w-full absolute top-1/2 -translate-y-1/2 z-10 px-6 text-text-dark ${isHovered
-              ? "opacity-100 transition-opacity duration-300 ease-in-out"
-              : "opacity-0 transition-opacity duration-300 ease-in-out"
-              }`}
+            className={`hidden lg:block w-full absolute top-1/2 -translate-y-1/2 z-10 px-6 text-text-dark ${
+              isHovered
+                ? "opacity-100 transition-opacity duration-300 ease-in-out"
+                : "opacity-0 transition-opacity duration-300 ease-in-out"
+            }`}
           >
             <div
               ref={prevRef}
@@ -274,10 +292,11 @@ useEffect(() => {
           <SwiperSlide key={item.url}>
             <div
               onClick={() => handleThumbSlideClick(item.url!)}
-              className={`rounded-md cursor-pointer overflow-hidden ${picUrl === item.url
-                ? "border border-darkmode-border dark:border-yellow-500"
-                : "border border-border dark:border-border/40"
-                }`}
+              className={`rounded-md cursor-pointer overflow-hidden ${
+                picUrl === item.url
+                  ? "border border-darkmode-border dark:border-yellow-500"
+                  : "border border-border dark:border-border/40"
+              }`}
             >
               <img
                 src={generatPayloadImageUrl(item.url)}

@@ -33,13 +33,19 @@ export interface Props {
   image?: string;
   noindex?: boolean;
   canonical?: string;
-  jsonLd?:JSON|Object|any;
+  jsonLd?: JSON | Object | any;
 }
 
 // destructure frontmatter
-const { title, meta_title, description, image, noindex, canonical=new URL(Astro.url.pathname, Astro.site),jsonLd } =
-  Astro.props;
-
+const {
+  title,
+  meta_title,
+  description,
+  image,
+  noindex,
+  canonical = new URL(Astro.url.pathname, Astro.site),
+  jsonLd,
+} = Astro.props;
 ---
 
 <!doctype html>
@@ -108,18 +114,40 @@ const { title, meta_title, description, image, noindex, canonical=new URL(Astro.
     <meta
       name="description"
       content={plainify(
-        description ? description : config.metadata.meta_description
+        description ? description : config.metadata.meta_description,
       )}
     />
-    {jsonLd ?
-    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)}></script>
-    :null}
+    {
+      jsonLd ? (
+        <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+      ) : null
+    }
+
+    <script is:inline type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://100mg.tw/#website",
+            "name": "性福藥局",
+            "url": "https://100mg.tw/"
+          },
+          {
+            "@type": "LocalBusiness",
+            "@id": "https://100mg.tw/#organization",
+            "name": "必利勁藥局",
+            "url": "https://100mg.tw/",
+            "description": "性福藥局是一家專門提供早洩與勃起功能障礙藥物的線上藥局，產品包括必利勁、威而鋼、犀利士及樂威壯等，提供使用者便利且私密的購買管道。"
+          }
+        ]
+      }
+    </script>
 
     <ClientRouter />
 
     <!-- author from config.json -->
     <meta name="author" content={config.metadata.meta_author} />
-
   </head>
   <body>
     <TwSizeIndicator />

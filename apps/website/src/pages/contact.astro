@@ -8,7 +8,7 @@ import { getEntry } from "astro:content";
 
 const contact = (await getEntry(
   "contact",
-  "-index"
+  "-index",
 )) as CollectionEntry<"contact">;
 const { contact_form_action }: { contact_form_action: string } = config.params;
 const { title, meta_title, description, image, contact_meta } = contact.data;
@@ -53,9 +53,7 @@ const { title, meta_title, description, image, contact_meta } = contact.data;
         >
           <div class="mb-6 md:grid grid-cols-2 gap-x-8 max-md:space-y-6">
             <div>
-              <label for="name" class="form-label">
-                姓名
-              </label>
+              <label for="name" class="form-label"> 姓名 </label>
               <input
                 id="name"
                 name="name"
@@ -66,9 +64,7 @@ const { title, meta_title, description, image, contact_meta } = contact.data;
             </div>
 
             <div>
-              <label for="email" class="form-label">
-                Email 地址
-              </label>
+              <label for="email" class="form-label"> Email 地址 </label>
               <input
                 id="email"
                 name="email"
@@ -79,24 +75,60 @@ const { title, meta_title, description, image, contact_meta } = contact.data;
             </div>
           </div>
 
-          <div class="mb-6">
-            <label for="message" class="form-label">
-              你的訊息
-            </label>
-            <textarea
-              id="message"
-              name="message"
-              class="form-input"
-              placeholder="輸入您的訊息..."
-              rows={8}
-              ></textarea>
+          <div class="mb-6">
+            <label for="message" class="form-label"> 你的訊息 </label>
+            <textarea
 
-          </div>
+
+
+
+
+
+
+              id="message"
+
+
+
+
+
+
+
+              name="message"
+
+
+
+
+
+
+
+              class="form-input"
+
+
+
+
+
+
+
+              placeholder="輸入您的訊息..."
+
+
+
+
+
+
+
+              rows={8}
+
+
+
+
+
+
+              ></textarea>
+          </div>
 
           <div class="flex justify-end">
-            <button type="submit" class="btn btn-primary">
-              提交
-            </button>
+            <button type="submit" class="btn btn-primary"> 提交 </button>
           </div>
         </form>
       </div>
@@ -105,23 +137,61 @@ const { title, meta_title, description, image, contact_meta } = contact.data;
 
   <!-- Notification Toast -->
   <div id="notification" class="fixed top-4 right-4 z-50 hidden">
-    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 max-w-sm">
+    <div
+      class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 max-w-sm"
+    >
       <div class="flex items-start">
         <div class="flex-shrink-0">
-          <svg id="successIcon" class="hidden h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <svg
+            id="successIcon"
+            class="hidden h-6 w-6 text-green-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
-          <svg id="errorIcon" class="hidden h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <svg
+            id="errorIcon"
+            class="hidden h-6 w-6 text-red-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         </div>
         <div class="ml-3 flex-1">
-          <p id="notificationMessage" class="text-sm font-medium text-gray-900 dark:text-white"></p>
+          <p
+            id="notificationMessage"
+            class="text-sm font-medium text-gray-900 dark:text-white"
+          >
+          </p>
         </div>
         <div class="ml-4 flex-shrink-0">
-          <button id="closeNotification" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          <button
+            id="closeNotification"
+            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            <svg
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"></path>
             </svg>
           </button>
         </div>
@@ -130,25 +200,28 @@ const { title, meta_title, description, image, contact_meta } = contact.data;
   </div>
 
   <script>
-    function showNotification(message: string, type: 'success' | 'error' = 'success') {
-      const notification = document.getElementById('notification');
-      const messageEl = document.getElementById('notificationMessage');
-      const successIcon = document.getElementById('successIcon');
-      const errorIcon = document.getElementById('errorIcon');
+    function showNotification(
+      message: string,
+      type: "success" | "error" = "success",
+    ) {
+      const notification = document.getElementById("notification");
+      const messageEl = document.getElementById("notificationMessage");
+      const successIcon = document.getElementById("successIcon");
+      const errorIcon = document.getElementById("errorIcon");
 
       if (!notification || !messageEl || !successIcon || !errorIcon) return;
 
       messageEl.textContent = message;
 
-      if (type === 'success') {
-        successIcon.classList.remove('hidden');
-        errorIcon.classList.add('hidden');
+      if (type === "success") {
+        successIcon.classList.remove("hidden");
+        errorIcon.classList.add("hidden");
       } else {
-        successIcon.classList.add('hidden');
-        errorIcon.classList.remove('hidden');
+        successIcon.classList.add("hidden");
+        errorIcon.classList.remove("hidden");
       }
 
-      notification.classList.remove('hidden');
+      notification.classList.remove("hidden");
 
       setTimeout(() => {
         hideNotification();
@@ -156,53 +229,57 @@ const { title, meta_title, description, image, contact_meta } = contact.data;
     }
 
     function hideNotification() {
-      const notification = document.getElementById('notification');
+      const notification = document.getElementById("notification");
       if (notification) {
-        notification.classList.add('hidden');
+        notification.classList.add("hidden");
       }
     }
 
-    document.getElementById('closeNotification')?.addEventListener('click', hideNotification);
+    document
+      .getElementById("closeNotification")
+      ?.addEventListener("click", hideNotification);
 
+    document
+      .getElementById("contactForm")
+      ?.addEventListener("submit", async function (e) {
+        e.preventDefault();
 
-    document.getElementById('contactForm')?.addEventListener('submit', async function(e) {
-      e.preventDefault();
+        const form = e.target as HTMLFormElement;
+        const submitButton = form.querySelector(
+          'button[type="submit"]',
+        ) as HTMLButtonElement;
+        if (!submitButton) return;
 
-      const form = e.target as HTMLFormElement;
-      const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement;
-      if (!submitButton) return;
+        const originalText = submitButton.textContent;
 
-      const originalText = submitButton.textContent;
+        submitButton.disabled = true;
+        submitButton.textContent = "發送中...";
 
+        try {
+          const formData = new FormData(form);
+          const response = await fetch("/api/contact", {
+            method: "POST",
+            body: formData,
+          });
 
-      submitButton.disabled = true;
-      submitButton.textContent = '發送中...';
+          const result = await response.json();
 
-      try {
-        const formData = new FormData(form);
-        const response = await fetch('/api/contact', {
-          method: 'POST',
-          body: formData
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-          // Show success message
-          showNotification(result.message, 'success');
-          form.reset();
-        } else {
-          // Show error message
-          showNotification(result.message, 'error');
+          if (result.success) {
+            // Show success message
+            showNotification(result.message, "success");
+            form.reset();
+          } else {
+            // Show error message
+            showNotification(result.message, "error");
+          }
+        } catch (error) {
+          console.error("Form submission error:", error);
+          showNotification("發送訊息時發生錯誤，請稍後再試。", "error");
+        } finally {
+          // Re-enable submit button
+          submitButton.disabled = false;
+          submitButton.textContent = originalText;
         }
-      } catch (error) {
-        console.error('Form submission error:', error);
-        showNotification('發送訊息時發生錯誤，請稍後再試。', 'error');
-      } finally {
-        // Re-enable submit button
-        submitButton.disabled = false;
-        submitButton.textContent = originalText;
-      }
-    });
+      });
   </script>
 </Base>

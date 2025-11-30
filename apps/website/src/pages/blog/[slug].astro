@@ -41,13 +41,14 @@ try {
   });
 
   blog = result.docs[0];
-  
+
   // Populate tags if they're not already populated
   if (blog && blog.tags) {
     const needsPopulation = blog.tags.some(
-      (tag: any) => typeof tag === "number" || 
-                   typeof tag === "string" ||
-                   (typeof tag === "object" && tag !== null && !tag.name),
+      (tag: any) =>
+        typeof tag === "number" ||
+        typeof tag === "string" ||
+        (typeof tag === "object" && tag !== null && !tag.name),
     );
 
     if (needsPopulation) {
@@ -62,25 +63,33 @@ try {
           if (typeof tag === "object" && tag !== null) {
             // Handle ObjectId or Buffer (MongoDB)
             if (Buffer.isBuffer(tag)) {
-              return tag.toString('hex');
+              return tag.toString("hex");
             }
             // Check if it's an ObjectId
-            if (tag.toString && typeof tag.toString === 'function' && tag._bsontype === 'ObjectId') {
+            if (
+              tag.toString &&
+              typeof tag.toString === "function" &&
+              tag._bsontype === "ObjectId"
+            ) {
               return tag.toString();
             }
             // If object has id property
             if (tag.id) {
               const id = tag.id;
               if (Buffer.isBuffer(id)) {
-                return id.toString('hex');
+                return id.toString("hex");
               }
-              if (id.toString && typeof id.toString === 'function' && id._bsontype === 'ObjectId') {
+              if (
+                id.toString &&
+                typeof id.toString === "function" &&
+                id._bsontype === "ObjectId"
+              ) {
                 return id.toString();
               }
               return id;
             }
             // Try to convert object to string if it looks like ObjectId
-            if (tag.toString && typeof tag.toString === 'function') {
+            if (tag.toString && typeof tag.toString === "function") {
               const str = tag.toString();
               if (/^[0-9a-fA-F]{24}$/.test(str)) {
                 return str;

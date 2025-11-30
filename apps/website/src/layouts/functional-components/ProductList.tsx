@@ -1,18 +1,18 @@
 import config from "@/config/config.json";
-import type { Product } from 'payload_app';
-import React from 'react';
-import { AddToCart } from './cart/AddToCart';
+import type { Product } from "payload_app";
+import React from "react";
+import { AddToCart } from "./cart/AddToCart";
 import { generatPayloadImageUrl } from "@/lib/utils";
 
 const ProductList = ({
   products,
-  loading
+  loading,
 }: {
   products: Product[];
   loading: boolean;
 }) => {
   const { currencySymbol } = config.shopify;
-  const searchValue = new URLSearchParams(window.location.search).get('q');
+  const searchValue = new URLSearchParams(window.location.search).get("q");
 
   const resultsText = products.length > 1 ? "results" : "result";
 
@@ -23,7 +23,9 @@ const ProductList = ({
           {products.length === 0
             ? "There are no products that match "
             : `Showing ${products.length} ${resultsText} for `}
-          <span className="font-bold text-dark dark:text-darkmode-text-dark">&quot;{searchValue}&quot;</span>
+          <span className="font-bold text-dark dark:text-darkmode-text-dark">
+            &quot;{searchValue}&quot;
+          </span>
         </p>
       ) : null}
 
@@ -60,14 +62,18 @@ const ProductList = ({
               <div className="row">
                 <div className="col-4">
                   <img
-                    src={typeof featuredImage !== "number" 
-                      ? generatPayloadImageUrl(featuredImage?.url) 
-                      : "/images/product_image404.jpg"}
+                    src={
+                      typeof featuredImage !== "number"
+                        ? generatPayloadImageUrl(featuredImage?.url)
+                        : "/images/product_image404.jpg"
+                    }
                     width={312}
                     height={269}
-                    alt={typeof featuredImage !== "number" 
-                      ? featuredImage?.alt || title
-                      : title}
+                    alt={
+                      typeof featuredImage !== "number"
+                        ? featuredImage?.alt || title
+                        : title
+                    }
                     className="w-[312px] h-[150px] md:h-[269px] object-cover border border-border dark:border-darkmode-border rounded-md"
                   />
                 </div>
@@ -89,7 +95,9 @@ const ProductList = ({
                   </div>
 
                   <p className="max-md:text-xs text-text-light dark:text-darkmode-text-light my-4 md:mb-8 line-clamp-1 md:line-clamp-3">
-                    {typeof description === 'string' ? description : 'Product description'}
+                    {typeof description === "string"
+                      ? description
+                      : "Product description"}
                   </p>
                   <AddToCart
                     product={product}

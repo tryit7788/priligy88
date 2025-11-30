@@ -4,7 +4,7 @@ export type SortFilterItem = {
   sortKey: string;
   reverse: boolean;
 };
-export type SortKey = 'title' | 'price' | 'createdAt';
+export type SortKey = "title" | "price" | "createdAt";
 
 export const sorting: SortFilterItem[] = [
   {
@@ -42,10 +42,10 @@ export const sorting: SortFilterItem[] = [
     title: "Oldest",
     sortKey: "createdAt",
     reverse: false,
-  }
+  },
 ];
 
-export const defaultSort = sorting[0]
+export const defaultSort = sorting[0];
 export const TAGS = {
   collections: "collections",
   products: "products",

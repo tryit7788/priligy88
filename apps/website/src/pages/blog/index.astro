@@ -31,15 +31,10 @@ const result = await payload.find({
 // Populate tags for all blogs
 const { populateBlogTags } = await import("@/lib/blog");
 const blogsWithTags = await Promise.all(
-  result.docs.map((blog) => populateBlogTags(payload, blog))
+  result.docs.map((blog) => populateBlogTags(payload, blog)),
 );
 
-const {
-  totalDocs,
-  totalPages,
-  hasNextPage,
-  hasPrevPage,
-} = result;
+const { totalDocs, totalPages, hasNextPage, hasPrevPage } = result;
 
 const blogs = blogsWithTags;
 ---

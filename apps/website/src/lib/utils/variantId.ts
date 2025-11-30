@@ -41,20 +41,26 @@ export function extractMappingId(variantDetail: any): string {
 }
 
 /**
-* Recursively converts MongoDB ObjectIds to strings.
-* Useful before returning data to client or serializing to JSON.
-*/
+ * Recursively converts MongoDB ObjectIds to strings.
+ * Useful before returning data to client or serializing to JSON.
+ */
 export function normalizeId(id: any): string {
- if (id == null) return id;
+  if (id == null) return id;
 
- if (typeof id === 'object' && 'buffer' in id && id.buffer instanceof Uint8Array) {
-  // build mode: you kept it as an ObjectId
-  return Array.from(id.buffer, b => b.toString(16).padStart(2, '0')).join('');
-} else if (typeof id === 'string') {
-  // dev/watch mode: serialized to string
+  if (
+    typeof id === "object" &&
+    "buffer" in id &&
+    id.buffer instanceof Uint8Array
+  ) {
+    // build mode: you kept it as an ObjectId
+    return Array.from(id.buffer, (b) => b.toString(16).padStart(2, "0")).join(
+      "",
+    );
+  } else if (typeof id === "string") {
+    // dev/watch mode: serialized to string
+    return id;
+  }
+
+  // Primitive types stay the same
   return id;
-}
-
- // Primitive types stay the same
- return id;
 }

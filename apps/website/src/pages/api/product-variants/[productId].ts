@@ -19,15 +19,18 @@ export const GET: APIRoute = async ({ params }) => {
     // Handle the case where productId might be "[object Object]" string
     if (String(productId) === "[object Object]") {
       // console.error(`[API] Received "[object Object]" as productId - this indicates the ID wasn't properly serialized`);
-      return new Response(JSON.stringify({ error: "Invalid product ID format", variants: [] }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Invalid product ID format", variants: [] }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
     }
 
     productId = String(productId).trim();
     // console.log(`[API] Normalized productId:`, productId);
-    
+
     if (!productId) {
       return new Response(JSON.stringify({ error: "Product ID is required" }), {
         status: 400,
@@ -53,19 +56,25 @@ export const GET: APIRoute = async ({ params }) => {
         // Don't use select - it might be causing issues with relationships
         limit: 1,
       });
-      
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Database query timeout after 20 seconds')), 20000)
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error("Database query timeout after 20 seconds")),
+          20000,
+        ),
       );
-      
-      result = await Promise.race([queryPromise, timeoutPromise]) as any;
+
+      result = (await Promise.race([queryPromise, timeoutPromise])) as any;
       // console.log(`[API] Product query completed, found ${result?.docs?.length || 0} products`);
     } catch (error) {
       // console.error(`[API] Error querying product:`, error);
       // console.error(`[API] Error message:`, error instanceof Error ? error.message : String(error));
       // console.error(`[API] Error stack:`, error instanceof Error ? error.stack : String(error));
       return new Response(
-        JSON.stringify({ error: "Database query failed or timed out", variants: [] }),
+        JSON.stringify({
+          error: "Database query failed or timed out",
+          variants: [],
+        }),
         {
           status: 500,
           headers: { "Content-Type": "application/json" },
@@ -98,66 +107,76 @@ export const GET: APIRoute = async ({ params }) => {
 
     // Get the variant mappings with their associated variants
     // Normalize mapping IDs to handle Buffer objects (raw MongoDB ObjectIds), ObjectId objects, and string/number IDs
-    const mappingIds = product.variantMappings.map((mapping: any) => {
-      // Handle Buffer objects (raw MongoDB ObjectId in binary format)
-      if (Buffer.isBuffer(mapping)) {
-        // Convert Buffer to hex string (24 character ObjectId)
-        const hexString = mapping.toString('hex');
-        // console.log(`[API] Converted Buffer to hex string: ${hexString}`);
-        return hexString;
-      }
-      
-      // Handle populated objects with id property
-      if (typeof mapping === "object" && mapping !== null) {
-        // If it has an id property, check what type it is
-        if (mapping.id !== undefined) {
-          // Handle Buffer in id property
-          if (Buffer.isBuffer(mapping.id)) {
-            const hexString = mapping.id.toString('hex');
-            // console.log(`[API] Converted Buffer id to hex string: ${hexString}`);
-            return hexString;
-          }
-          // Handle ObjectId objects (they have toString method)
-          if (typeof mapping.id === "object" && mapping.id !== null && typeof mapping.id.toString === "function") {
-            // Try toHexString first (MongoDB ObjectId method)
-            if (typeof mapping.id.toHexString === "function") {
-              return mapping.id.toHexString();
-            }
-            // Fallback to toString
-            return mapping.id.toString();
-          }
-          // Already a string or number
-          return String(mapping.id);
-        }
-        // Object without id property - might be the ObjectId itself
+    const mappingIds = product.variantMappings
+      .map((mapping: any) => {
+        // Handle Buffer objects (raw MongoDB ObjectId in binary format)
         if (Buffer.isBuffer(mapping)) {
-          return mapping.toString('hex');
+          // Convert Buffer to hex string (24 character ObjectId)
+          const hexString = mapping.toString("hex");
+          // console.log(`[API] Converted Buffer to hex string: ${hexString}`);
+          return hexString;
         }
-        // Try toString if available
-        if (typeof mapping.toString === "function") {
-          const str = mapping.toString();
-          // If toString() gives us a hex-like string, use it; otherwise might be ObjectId
-          if (/^[0-9a-fA-F]{24}$/.test(str)) {
+
+        // Handle populated objects with id property
+        if (typeof mapping === "object" && mapping !== null) {
+          // If it has an id property, check what type it is
+          if (mapping.id !== undefined) {
+            // Handle Buffer in id property
+            if (Buffer.isBuffer(mapping.id)) {
+              const hexString = mapping.id.toString("hex");
+              // console.log(`[API] Converted Buffer id to hex string: ${hexString}`);
+              return hexString;
+            }
+            // Handle ObjectId objects (they have toString method)
+            if (
+              typeof mapping.id === "object" &&
+              mapping.id !== null &&
+              typeof mapping.id.toString === "function"
+            ) {
+              // Try toHexString first (MongoDB ObjectId method)
+              if (typeof mapping.id.toHexString === "function") {
+                return mapping.id.toHexString();
+              }
+              // Fallback to toString
+              return mapping.id.toString();
+            }
+            // Already a string or number
+            return String(mapping.id);
+          }
+          // Object without id property - might be the ObjectId itself
+          if (Buffer.isBuffer(mapping)) {
+            return mapping.toString("hex");
+          }
+          // Try toString if available
+          if (typeof mapping.toString === "function") {
+            const str = mapping.toString();
+            // If toString() gives us a hex-like string, use it; otherwise might be ObjectId
+            if (/^[0-9a-fA-F]{24}$/.test(str)) {
+              return str;
+            }
+            // Might be ObjectId.toString() which returns hex
             return str;
           }
-          // Might be ObjectId.toString() which returns hex
-          return str;
+          return String(mapping);
         }
+
+        // Handle string or number directly
         return String(mapping);
-      }
-      
-      // Handle string or number directly
-      return String(mapping);
-    }).filter(Boolean);
-    
+      })
+      .filter(Boolean);
+
     // console.log(`[API] Extracted ${mappingIds.length} mapping IDs:`, mappingIds);
-    
+
     // Validate all IDs are 24-character hex strings
-    const invalidIds = mappingIds.filter((id: string) => !/^[0-9a-fA-F]{24}$/.test(String(id)));
+    const invalidIds = mappingIds.filter(
+      (id: string) => !/^[0-9a-fA-F]{24}$/.test(String(id)),
+    );
     if (invalidIds.length > 0) {
       // console.error(`[API] Invalid ObjectId formats detected:`, invalidIds);
       // Filter out invalid IDs to prevent query errors
-      const validIds = mappingIds.filter((id: string) => /^[0-9a-fA-F]{24}$/.test(String(id)));
+      const validIds = mappingIds.filter((id: string) =>
+        /^[0-9a-fA-F]{24}$/.test(String(id)),
+      );
       // console.log(`[API] Filtered to ${validIds.length} valid ObjectIds`);
       if (validIds.length === 0) {
         return new Response(JSON.stringify({ variants: [] }), {
@@ -187,11 +206,11 @@ export const GET: APIRoute = async ({ params }) => {
       depth: 1, // Populate the variant relationship
       limit: 100,
     });
-    
+
     // console.log(`[API] Query result: Found ${mappings.docs.length} active mappings`);
 
     // console.log(`[API] Found ${mappings.docs.length} variant mappings for product ${productId}`);
-    
+
     // Debug: Log first mapping to see structure
     // if (mappings.docs.length > 0) {
     //   console.log(`[API] First mapping structure:`, JSON.stringify(mappings.docs[0], null, 2));
@@ -213,7 +232,7 @@ export const GET: APIRoute = async ({ params }) => {
             return null;
           }
         }
-        
+
         if (!variant) {
           // console.warn(`[API] Variant mapping ${mapping.id} has no variant object or ID`);
           return null;

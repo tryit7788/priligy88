@@ -6,7 +6,7 @@ import { getEntry } from "astro:content";
 
 const call_to_action = (await getEntry(
   "ctaSection",
-  "call-to-action"
+  "call-to-action",
 )) as CollectionEntry<"ctaSection">;
 const { data } = call_to_action;
 ---

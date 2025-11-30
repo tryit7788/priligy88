@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import DynamicIcon from "@/helpers/DynamicIcon";
 
-const SocialShare: React.FC<{ socialName: string; className: string; pathname: string }> = ({
-  socialName,
-  className,
-  pathname,
-}) => {
+const SocialShare: React.FC<{
+  socialName: string;
+  className: string;
+  pathname: string;
+}> = ({ socialName, className, pathname }) => {
   const [baseUrl, setBaseUrl] = useState("");
   const [isTooltipVisible, setIsTooltipVisible] = useState(false);
 

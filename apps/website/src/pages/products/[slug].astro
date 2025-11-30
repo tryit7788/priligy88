@@ -37,7 +37,10 @@ export async function getStaticPaths() {
     return paths;
   } catch (error) {
     console.error("Error generating static paths for products:", error);
-    console.error("Stack trace:", error instanceof Error ? error.stack : String(error));
+    console.error(
+      "Stack trace:",
+      error instanceof Error ? error.stack : String(error),
+    );
     return [];
   }
 }
@@ -70,7 +73,9 @@ if (!product) {
     product = fetchedProduct;
   } catch (error) {
     console.error(`Error fetching product with slug "${slug}":`, error);
-    console.error("This might be a database connectivity issue or the product doesn't exist in production");
+    console.error(
+      "This might be a database connectivity issue or the product doesn't exist in production",
+    );
     return Astro.redirect("/404");
   }
 }
@@ -86,7 +91,9 @@ const productData = product as Product;
 // Normalize product ID to string for proper serialization when passing to React components
 // This handles MongoDB ObjectIds which don't serialize properly when passed from Astro to React
 const normalizedProductId = normalizeId(productData.id);
-console.log(`[Astro] Normalizing product ID: ${typeof productData.id} -> ${normalizedProductId} (type: ${typeof normalizedProductId})`);
+console.log(
+  `[Astro] Normalizing product ID: ${typeof productData.id} -> ${normalizedProductId} (type: ${typeof normalizedProductId})`,
+);
 
 // Create a serialized version of product with normalized ID for React components
 // We only need to ensure the ID is a string - Astro will handle serialization of the rest

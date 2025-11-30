@@ -21,19 +21,19 @@ interface CartItem {
 function normalizeId(id: any): string | number {
   // Handle Buffer (MongoDB ObjectId binary format)
   if (Buffer.isBuffer(id)) {
-    return id.toString('hex');
+    return id.toString("hex");
   }
-  
+
   // Handle object with id property
-  if (typeof id === 'object' && id !== null && 'id' in id) {
+  if (typeof id === "object" && id !== null && "id" in id) {
     return normalizeId(id.id);
   }
-  
+
   // Handle string or number
-  if (typeof id === 'string' || typeof id === 'number') {
+  if (typeof id === "string" || typeof id === "number") {
     return id;
   }
-  
+
   // Fallback: try to convert to string
   return String(id);
 }
@@ -42,17 +42,17 @@ function normalizeId(id: any): string | number {
 function compareIds(id1: any, id2: any): boolean {
   const normalized1 = normalizeId(id1);
   const normalized2 = normalizeId(id2);
-  
+
   // Compare as strings first (handles ObjectId strings)
   if (String(normalized1) === String(normalized2)) {
     return true;
   }
-  
+
   // Also try numeric comparison if both are numbers
-  if (typeof normalized1 === 'number' && typeof normalized2 === 'number') {
+  if (typeof normalized1 === "number" && typeof normalized2 === "number") {
     return normalized1 === normalized2;
   }
-  
+
   return false;
 }
 
@@ -78,9 +78,11 @@ async function validateAndGetProducts(items: CartItem[]) {
   // Try using 'in' operator first, but if it fails or doesn't return enough results, query individually
   let products: any[] = [];
   let querySucceeded = false;
-  
+
   try {
-    console.log(`[Checkout] Querying products with IDs: ${productIds.join(", ")}`);
+    console.log(
+      `[Checkout] Querying products with IDs: ${productIds.join(", ")}`,
+    );
     const result = await payloadClient.find({
       collection: "products",
       where: {
@@ -90,35 +92,44 @@ async function validateAndGetProducts(items: CartItem[]) {
       limit: productIds.length * 2, // Ensure we get all products
     });
     products = result.docs || [];
-    console.log(`[Checkout] Bulk query returned ${products.length} products (expected ${productIds.length})`);
-    
+    console.log(
+      `[Checkout] Bulk query returned ${products.length} products (expected ${productIds.length})`,
+    );
+
     // Check if we got enough products
     if (products.length === productIds.length) {
       querySucceeded = true;
     } else {
-      console.warn(`[Checkout] Bulk query returned insufficient results. Got ${products.length}, expected ${productIds.length}`);
+      console.warn(
+        `[Checkout] Bulk query returned insufficient results. Got ${products.length}, expected ${productIds.length}`,
+      );
     }
   } catch (error) {
-    console.warn("[Checkout] Bulk query failed, trying individual queries:", error);
+    console.warn(
+      "[Checkout] Bulk query failed, trying individual queries:",
+      error,
+    );
   }
 
   // If bulk query didn't work or didn't return enough results, query individually
   if (!querySucceeded) {
     console.log("[Checkout] Falling back to individual product queries");
-    const alreadyFoundIds = new Set(products.map((p) => String(normalizeId(p.id))));
-    
+    const alreadyFoundIds = new Set(
+      products.map((p) => String(normalizeId(p.id))),
+    );
+
     for (const productId of productIds) {
       const productIdStr = String(productId);
-      
+
       // Skip if we already found this product
       if (alreadyFoundIds.has(productIdStr)) {
         continue;
       }
-      
+
       try {
         console.log(`[Checkout] Fetching individual product: ${productId}`);
         let product = null;
-        
+
         // Try findByID first
         try {
           product = await payloadClient.findByID({
@@ -128,25 +139,33 @@ async function validateAndGetProducts(items: CartItem[]) {
           });
         } catch (findByIdError) {
           // Fallback: try find with equals
-          console.warn(`[Checkout] findByID failed for ${productId}, trying find with equals:`, findByIdError);
+          console.warn(
+            `[Checkout] findByID failed for ${productId}, trying find with equals:`,
+            findByIdError,
+          );
           const findResult = await payloadClient.find({
             collection: "products",
             where: {
-              and: [{ id: { equals: productId } }, { published: { equals: true } }],
+              and: [
+                { id: { equals: productId } },
+                { published: { equals: true } },
+              ],
             },
             depth: 2,
             limit: 1,
           });
           product = findResult.docs?.[0] || null;
         }
-        
+
         if (product) {
           if (product.published) {
             products.push(product);
             alreadyFoundIds.add(productIdStr);
             console.log(`[Checkout] Found published product: ${productId}`);
           } else {
-            console.warn(`[Checkout] Product ${productId} exists but is not published`);
+            console.warn(
+              `[Checkout] Product ${productId} exists but is not published`,
+            );
           }
         } else {
           console.warn(`[Checkout] Product ${productId} not found in database`);
@@ -160,11 +179,14 @@ async function validateAndGetProducts(items: CartItem[]) {
   // Check which products are missing using normalized comparison
   const foundProductIds = products.map((p) => normalizeId(p.id));
   const missingProductIds = productIds.filter(
-    (requestedId) => !foundProductIds.some((foundId) => compareIds(foundId, requestedId)),
+    (requestedId) =>
+      !foundProductIds.some((foundId) => compareIds(foundId, requestedId)),
   );
 
   if (missingProductIds.length > 0) {
-    console.error(`[Checkout] Missing products: ${missingProductIds.join(", ")}`);
+    console.error(
+      `[Checkout] Missing products: ${missingProductIds.join(", ")}`,
+    );
     console.error(`[Checkout] Requested IDs: ${productIds.join(", ")}`);
     console.error(`[Checkout] Found IDs: ${foundProductIds.join(", ")}`);
     throw new Error(
@@ -384,7 +406,9 @@ export const POST: APIRoute = async ({ request }) => {
     // Create formatted cart items with actual prices from database
     const formattedCartItems = cartItems.map((item) => {
       const normalizedItemId = normalizeId(item.id);
-      const product = products.find((p) => compareIds(p.id, normalizedItemId)) as Product;
+      const product = products.find((p) =>
+        compareIds(p.id, normalizedItemId),
+      ) as Product;
       if (!product) throw new Error(`Product ${item.id} not found`);
 
       // Determine price based on variant or product
@@ -400,7 +424,11 @@ export const POST: APIRoute = async ({ request }) => {
           return compareVariantIds(mappingVariantId, itemVariantId);
         });
 
-        if (variantMapping && typeof variantMapping !== "number" && typeof variantMapping !== "string") {
+        if (
+          variantMapping &&
+          typeof variantMapping !== "number" &&
+          typeof variantMapping !== "string"
+        ) {
           // Use centralized pricing logic
           const variant =
             typeof variantMapping.variant === "object"
@@ -421,7 +449,9 @@ export const POST: APIRoute = async ({ request }) => {
 
       const productIdForOrder = normalizeId(product.id);
       if (productIdForOrder === undefined || productIdForOrder === null) {
-        throw new Error(`Unable to resolve product ID for ${product.title ?? product.id}`);
+        throw new Error(
+          `Unable to resolve product ID for ${product.title ?? product.id}`,
+        );
       }
 
       const cartItem: any = {
@@ -478,22 +508,22 @@ export const POST: APIRoute = async ({ request }) => {
     });
   } catch (error) {
     console.error("[Checkout] Error processing checkout:", error);
-    
+
     // Log more details in production for debugging
     if (error instanceof Error) {
       console.error("[Checkout] Error message:", error.message);
       console.error("[Checkout] Error stack:", error.stack);
     }
-    
+
     // Provide more detailed error message
-    const errorMessage = error instanceof Error 
-      ? error.message 
-      : "Failed to process checkout";
-    
+    const errorMessage =
+      error instanceof Error ? error.message : "Failed to process checkout";
+
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: "Failed to process checkout",
-        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+        details:
+          process.env.NODE_ENV === "development" ? errorMessage : undefined,
       }),
       {
         status: 500,

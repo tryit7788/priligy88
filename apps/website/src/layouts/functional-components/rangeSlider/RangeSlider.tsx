@@ -75,14 +75,14 @@ const RangeSlider = ({
         const newPercent = (initialMinVal / maxAmount) * 100 + dPercent;
         const newValue = Math.max(
           0,
-          Math.min(maxValue - 1, Math.round((newPercent * maxAmount) / 100))
+          Math.min(maxValue - 1, Math.round((newPercent * maxAmount) / 100)),
         );
         setMinValue(newValue);
       } else {
         const newPercent = (initialMaxVal / maxAmount) * 100 + dPercent;
         const newValue = Math.max(
           minValue + 1,
-          Math.min(maxAmount, Math.round((newPercent * maxAmount) / 100))
+          Math.min(maxAmount, Math.round((newPercent * maxAmount) / 100)),
         );
         setMaxValue(newValue);
       }
@@ -104,7 +104,7 @@ const RangeSlider = ({
     }
 
     const searchParams = new URLSearchParams(window.location.search);
-    
+
     // Only set price parameters if they differ from default range
     if (min === 0 && max === maxAmount) {
       searchParams.delete("minPrice");
@@ -116,12 +116,14 @@ const RangeSlider = ({
 
     const newUrl = createUrl("/products", searchParams);
     // Use history.pushState for client-side navigation
-    window.history.pushState({}, '', newUrl);
-    
+    window.history.pushState({}, "", newUrl);
+
     // Dispatch custom event for client-side updates
-    window.dispatchEvent(new CustomEvent('filterchange', {
-      detail: { params: searchParams }
-    }));
+    window.dispatchEvent(
+      new CustomEvent("filterchange", {
+        detail: { params: searchParams },
+      }),
+    );
   }
 
   const showSubmitButton =

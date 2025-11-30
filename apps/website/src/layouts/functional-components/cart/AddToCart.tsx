@@ -42,14 +42,14 @@ export function AddToCart({
 
     try {
       // Normalize product ID to string (handles MongoDB ObjectIds)
-      console.log('[Trace] product.id = ', product.id);
+      console.log("[Trace] product.id = ", product.id);
       const productId = normalizeId(product.id);
-      console.log('[Trace] productId = ', productId);
+      console.log("[Trace] productId = ", productId);
       if (!productId) {
         setError("Invalid product ID");
         return;
       }
-      
+
       // Server-side validate price/stock
       const res = await fetch("/api/validate-cart-item", {
         method: "POST",
@@ -94,7 +94,11 @@ export function AddToCart({
       // Get image URL safely
       let imageUrl = "";
       if (product.featuredImage) {
-        if (typeof product.featuredImage === "object" && product.featuredImage !== null && "url" in product.featuredImage) {
+        if (
+          typeof product.featuredImage === "object" &&
+          product.featuredImage !== null &&
+          "url" in product.featuredImage
+        ) {
           imageUrl = product.featuredImage.url || "";
         } else if (typeof product.featuredImage === "string") {
           imageUrl = product.featuredImage;
@@ -112,7 +116,7 @@ export function AddToCart({
       };
 
       cartOperations.addItem(item as any);
-      
+
       // Show success feedback (optional - could be enhanced with toast notification)
       // console.log("Item added to cart successfully:", item);
     } catch (error) {
@@ -129,7 +133,7 @@ export function AddToCart({
   const isAvailable = currentVariant
     ? currentVariant.stock > 0
     : product.published && (product.totalStock || 0) > 0;
-  
+
   // console.log("[TRACE] product.totalStock = ", product.totalStock)
 
   const buttonClasses = `${stylesClass} ${

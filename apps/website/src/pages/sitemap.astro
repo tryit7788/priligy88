@@ -18,12 +18,12 @@ const categories = await getCollections();
 
 // Fetch all published blogs
 const blogsResult = await payloadClient.find({
-  collection: 'blogs',
-  where: { 
-    published: { equals: true } 
+  collection: "blogs",
+  where: {
+    published: { equals: true },
   },
   limit: 1000,
-  sort: '-createdAt',
+  sort: "-createdAt",
   depth: 1,
 });
 
@@ -32,13 +32,13 @@ let allBlogs = [...blogsResult.docs];
 if (blogsResult.totalPages > 1) {
   for (let page = 2; page <= blogsResult.totalPages; page++) {
     const nextPage = await payloadClient.find({
-      collection: 'blogs',
-      where: { 
-        published: { equals: true } 
+      collection: "blogs",
+      where: {
+        published: { equals: true },
       },
       limit: 1000,
       page: page,
-      sort: '-createdAt',
+      sort: "-createdAt",
       depth: 1,
     });
     allBlogs.push(...nextPage.docs);
@@ -53,42 +53,42 @@ categories.forEach((category: any) => {
 
 products.forEach((product: any) => {
   const category = product.category;
-  if (category && typeof category === 'object' && 'slug' in category) {
+  if (category && typeof category === "object" && "slug" in category) {
     const categorySlug = category.slug;
     if (productsByCategory.has(categorySlug)) {
       productsByCategory.get(categorySlug).push(product);
     } else {
       // Handle products without category or uncategorized
-      if (!productsByCategory.has('uncategorized')) {
-        productsByCategory.set('uncategorized', []);
+      if (!productsByCategory.has("uncategorized")) {
+        productsByCategory.set("uncategorized", []);
       }
-      productsByCategory.get('uncategorized').push(product);
+      productsByCategory.get("uncategorized").push(product);
     }
   } else {
     // Product without category
-    if (!productsByCategory.has('uncategorized')) {
-      productsByCategory.set('uncategorized', []);
+    if (!productsByCategory.has("uncategorized")) {
+      productsByCategory.set("uncategorized", []);
     }
-    productsByCategory.get('uncategorized').push(product);
+    productsByCategory.get("uncategorized").push(product);
   }
 });
 
-const baseUrl = config.site.base_url.replace(/\/$/, '');
+const baseUrl = config.site.base_url.replace(/\/$/, "");
 
 // Static pages
 const staticPages = [
-  { title: '首頁', url: '/', description: '網站首頁' },
-  { title: '關於我們', url: '/about', description: '關於我們' },
-  { title: '產品', url: '/products', description: '所有產品' },
-  { title: '部落格', url: '/blog', description: '最新文章' },
-  { title: '聯絡我們', url: '/contact', description: '聯絡資訊' },
-  { title: '購物車', url: '/checkout', description: '結帳頁面' },
-  { title: '隱私政策', url: '/privacy-policy', description: '隱私政策' },
-  { title: '服務條款', url: '/terms-services', description: '服務條款' },
+  { title: "首頁", url: "/", description: "網站首頁" },
+  { title: "關於我們", url: "/about", description: "關於我們" },
+  { title: "產品", url: "/products", description: "所有產品" },
+  { title: "部落格", url: "/blog", description: "最新文章" },
+  { title: "聯絡我們", url: "/contact", description: "聯絡資訊" },
+  { title: "購物車", url: "/checkout", description: "結帳頁面" },
+  { title: "隱私政策", url: "/privacy-policy", description: "隱私政策" },
+  { title: "服務條款", url: "/terms-services", description: "服務條款" },
 ];
 ---
 
-<Base 
+<Base
   title="網站地圖 | Sitemap"
   description="完整的網站地圖，包含所有頁面、產品和文章連結"
 >
@@ -99,101 +99,131 @@ const staticPages = [
       <div class="row justify-center">
         <div class="lg:col-10">
           <div class="sitemap-content">
-            
             <!-- Static Pages Section -->
             <div class="mb-8">
               <h2 class="text-2xl font-bold mb-4 text-primary">主要頁面</h2>
               <ul class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {staticPages.map((page) => (
-                  <li>
-                    <a 
-                      href={page.url} 
-                      class="block p-3 rounded-lg border border-gray-200 hover:border-primary hover:bg-primary/5 transition-colors"
-                    >
-                      <span class="font-semibold text-gray-900">{page.title}</span>
-                      {page.description && (
-                        <span class="block text-sm text-gray-500 mt-1">{page.description}</span>
-                      )}
-                      <span class="block text-xs text-gray-400 mt-1">{baseUrl}{page.url}</span>
-                    </a>
-                  </li>
-                ))}
+                {
+                  staticPages.map((page) => (
+                    <li>
+                      <a
+                        href={page.url}
+                        class="block p-3 rounded-lg border border-gray-200 hover:border-primary hover:bg-primary/5 transition-colors"
+                      >
+                        <span class="font-semibold text-gray-900">
+                          {page.title}
+                        </span>
+                        {page.description && (
+                          <span class="block text-sm text-gray-500 mt-1">
+                            {page.description}
+                          </span>
+                        )}
+                        <span class="block text-xs text-gray-400 mt-1">
+                          {baseUrl}
+                          {page.url}
+                        </span>
+                      </a>
+                    </li>
+                  ))
+                }
               </ul>
             </div>
 
             <!-- Products by Category Section -->
             <div class="mb-8">
               <h2 class="text-2xl font-bold mb-4 text-primary">產品分類</h2>
-              
-              {categories.map((category: any) => {
-                const categoryProducts = productsByCategory.get(category.slug) || [];
-                if (categoryProducts.length === 0) return null;
-                
-                return (
-                  <div class="mb-6">
-                    <h3 class="text-xl font-semibold mb-3 text-gray-800 flex items-center gap-2">
-                      <a 
-                        href={`/products?category=${category.slug}`}
-                        class="hover:text-primary transition-colors"
-                      >
-                        {category.name}
-                      </a>
-                      <span class="text-sm font-normal text-gray-500">
-                        ({categoryProducts.length} 個產品)
-                      </span>
-                    </h3>
-                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                      {categoryProducts.slice(0, 20).map((product: any) => (
-                        <a 
-                          href={`/products/${product.slug}`}
-                          class="block p-2 rounded border border-gray-100 hover:border-primary hover:bg-primary/5 transition-colors text-sm"
-                          title={product.title}
-                        >
-                          <span class="line-clamp-1 text-gray-700">{product.title}</span>
-                        </a>
-                      ))}
-                    </div>
-                    {categoryProducts.length > 20 && (
-                      <p class="text-sm text-gray-500 mt-2">
-                        還有 {categoryProducts.length - 20} 個產品 - 
-                        <a href={`/products?category=${category.slug}`} class="text-primary hover:underline">
-                          查看全部
-                        </a>
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
 
-              {productsByCategory.has('uncategorized') && productsByCategory.get('uncategorized').length > 0 && (
-                <div class="mb-6">
-                  <h3 class="text-xl font-semibold mb-3 text-gray-800">
-                    未分類產品
-                    <span class="text-sm font-normal text-gray-500">
-                      ({productsByCategory.get('uncategorized').length} 個產品)
-                    </span>
-                  </h3>
-                  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                    {productsByCategory.get('uncategorized').slice(0, 20).map((product: any) => (
-                      <a 
-                        href={`/products/${product.slug}`}
-                        class="block p-2 rounded border border-gray-100 hover:border-primary hover:bg-primary/5 transition-colors text-sm"
-                        title={product.title}
-                      >
-                        <span class="line-clamp-1 text-gray-700">{product.title}</span>
-                      </a>
-                    ))}
-                  </div>
-                  {productsByCategory.get('uncategorized').length > 20 && (
-                    <p class="text-sm text-gray-500 mt-2">
-                      還有 {productsByCategory.get('uncategorized').length - 20} 個產品 - 
-                      <a href="/products" class="text-primary hover:underline">
-                        查看全部
-                      </a>
-                    </p>
-                  )}
-                </div>
-              )}
+              {
+                categories.map((category: any) => {
+                  const categoryProducts =
+                    productsByCategory.get(category.slug) || [];
+                  if (categoryProducts.length === 0) return null;
+
+                  return (
+                    <div class="mb-6">
+                      <h3 class="text-xl font-semibold mb-3 text-gray-800 flex items-center gap-2">
+                        <a
+                          href={`/products?category=${category.slug}`}
+                          class="hover:text-primary transition-colors"
+                        >
+                          {category.name}
+                        </a>
+                        <span class="text-sm font-normal text-gray-500">
+                          ({categoryProducts.length} 個產品)
+                        </span>
+                      </h3>
+                      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                        {categoryProducts.slice(0, 20).map((product: any) => (
+                          <a
+                            href={`/products/${product.slug}`}
+                            class="block p-2 rounded border border-gray-100 hover:border-primary hover:bg-primary/5 transition-colors text-sm"
+                            title={product.title}
+                          >
+                            <span class="line-clamp-1 text-gray-700">
+                              {product.title}
+                            </span>
+                          </a>
+                        ))}
+                      </div>
+                      {categoryProducts.length > 20 && (
+                        <p class="text-sm text-gray-500 mt-2">
+                          還有 {categoryProducts.length - 20} 個產品 -
+                          <a
+                            href={`/products?category=${category.slug}`}
+                            class="text-primary hover:underline"
+                          >
+                            查看全部
+                          </a>
+                        </p>
+                      )}
+                    </div>
+                  );
+                })
+              }
+
+              {
+                productsByCategory.has("uncategorized") &&
+                  productsByCategory.get("uncategorized").length > 0 && (
+                    <div class="mb-6">
+                      <h3 class="text-xl font-semibold mb-3 text-gray-800">
+                        未分類產品
+                        <span class="text-sm font-normal text-gray-500">
+                          ({productsByCategory.get("uncategorized").length}{" "}
+                          個產品)
+                        </span>
+                      </h3>
+                      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                        {productsByCategory
+                          .get("uncategorized")
+                          .slice(0, 20)
+                          .map((product: any) => (
+                            <a
+                              href={`/products/${product.slug}`}
+                              class="block p-2 rounded border border-gray-100 hover:border-primary hover:bg-primary/5 transition-colors text-sm"
+                              title={product.title}
+                            >
+                              <span class="line-clamp-1 text-gray-700">
+                                {product.title}
+                              </span>
+                            </a>
+                          ))}
+                      </div>
+                      {productsByCategory.get("uncategorized").length > 20 && (
+                        <p class="text-sm text-gray-500 mt-2">
+                          還有{" "}
+                          {productsByCategory.get("uncategorized").length - 20}{" "}
+                          個產品 -
+                          <a
+                            href="/products"
+                            class="text-primary hover:underline"
+                          >
+                            查看全部
+                          </a>
+                        </p>
+                      )}
+                    </div>
+                  )
+              }
             </div>
 
             <!-- All Products Link -->
@@ -202,8 +232,8 @@ const staticPages = [
               <p class="text-sm text-gray-600 mb-3">
                 共有 {products.length} 個產品
               </p>
-              <a 
-                href="/products" 
+              <a
+                href="/products"
                 class="inline-block px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition-colors"
               >
                 查看所有產品 →
@@ -211,50 +241,58 @@ const staticPages = [
             </div>
 
             <!-- Blog Posts Section -->
-            {allBlogs.length > 0 && (
-              <div class="mb-8">
-                <h2 class="text-2xl font-bold mb-4 text-primary">部落格文章</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {allBlogs.map((blog: any) => (
-                    <a 
-                      href={`/blog/${blog.slug}`}
-                      class="block p-4 rounded-lg border border-gray-200 hover:border-primary hover:bg-primary/5 transition-colors"
+            {
+              allBlogs.length > 0 && (
+                <div class="mb-8">
+                  <h2 class="text-2xl font-bold mb-4 text-primary">
+                    部落格文章
+                  </h2>
+                  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {allBlogs.map((blog: any) => (
+                      <a
+                        href={`/blog/${blog.slug}`}
+                        class="block p-4 rounded-lg border border-gray-200 hover:border-primary hover:bg-primary/5 transition-colors"
+                      >
+                        <h3 class="font-semibold text-gray-900 mb-2 line-clamp-2">
+                          {blog.title}
+                        </h3>
+                        {blog.meta?.description && (
+                          <p class="text-sm text-gray-600 mb-2 line-clamp-2">
+                            {blog.meta.description}
+                          </p>
+                        )}
+                        {blog.publishedDate && (
+                          <time class="text-xs text-gray-400">
+                            {new Date(blog.publishedDate).toLocaleDateString(
+                              "zh-TW",
+                            )}
+                          </time>
+                        )}
+                      </a>
+                    ))}
+                  </div>
+                  <div class="mt-4 text-center">
+                    <a
+                      href="/blog"
+                      class="inline-block px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition-colors"
                     >
-                      <h3 class="font-semibold text-gray-900 mb-2 line-clamp-2">
-                        {blog.title}
-                      </h3>
-                      {blog.meta?.description && (
-                        <p class="text-sm text-gray-600 mb-2 line-clamp-2">
-                          {blog.meta.description}
-                        </p>
-                      )}
-                      {blog.publishedDate && (
-                        <time class="text-xs text-gray-400">
-                          {new Date(blog.publishedDate).toLocaleDateString('zh-TW')}
-                        </time>
-                      )}
+                      查看所有文章 →
                     </a>
-                  ))}
+                  </div>
                 </div>
-                <div class="mt-4 text-center">
-                  <a 
-                    href="/blog" 
-                    class="inline-block px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition-colors"
-                  >
-                    查看所有文章 →
-                  </a>
-                </div>
-              </div>
-            )}
+              )
+            }
 
             <!-- XML Sitemap Link -->
             <div class="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <h3 class="text-lg font-semibold mb-2 text-blue-900">搜尋引擎地圖</h3>
+              <h3 class="text-lg font-semibold mb-2 text-blue-900">
+                搜尋引擎地圖
+              </h3>
               <p class="text-sm text-blue-700 mb-2">
                 搜尋引擎可以使用 XML 格式的網站地圖來索引網站內容。
               </p>
-              <a 
-                href="/sitemap.xml" 
+              <a
+                href="/sitemap.xml"
                 class="text-blue-600 hover:text-blue-800 underline text-sm"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -262,7 +300,6 @@ const staticPages = [
                 查看 XML 網站地圖 →
               </a>
             </div>
-
           </div>
         </div>
       </div>
@@ -287,4 +324,3 @@ const staticPages = [
     }
   </style>
 </Base>
-

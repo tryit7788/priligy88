@@ -20,18 +20,18 @@ const heroProducts = await payload.find({
   where: {
     enabled: {
       equals: true,
-    }
+    },
   },
 });
 
 const products = await payload.find({
   collection: "products",
   depth: 2,
-  where:{
+  where: {
     published: {
-      equals:true
-    }
-  }
+      equals: true,
+    },
+  },
 });
 const counts: Record<string, { count: number; category: ProductCategory }> = {};
 
@@ -57,13 +57,7 @@ const productCategories = Object.values(counts);
 
 // Get FAQ data from about page content
 const about = (await getEntry("about", "-index")) as CollectionEntry<"about">;
-const {
-  faq_section_title,
-  faq_section_subtitle,
-  faqs,
-  button,
-} = about.data;
-
+const { faq_section_title, faq_section_subtitle, faqs, button } = about.data;
 ---
 
 <Base>

@@ -26,7 +26,6 @@ const Tabs = ({ children }: TabProps) => {
     (match: RegExpMatchArray) => ({ name: match[1], children: match[0] }),
   );
 
-
   const handleKeyDown = (
     event: React.KeyboardEvent<EventTarget>,
     index: number,

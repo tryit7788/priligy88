@@ -31,7 +31,7 @@ const ProductFilters = ({
 }) => {
   // This state management is good, let's keep it.
   const [searchParams, setSearchParams] = useState(
-    new URLSearchParams(window.location.search)
+    new URLSearchParams(window.location.search),
   );
 
   // Read current selections directly from the component's state
@@ -43,10 +43,10 @@ const ProductFilters = ({
     // Remove the cursor/page when filters change to start from the first page
     newParams.delete("cursor");
     const newUrl = `${window.location.pathname}?${newParams.toString()}`;
-    window.history.pushState({}, '', newUrl);
+    window.history.pushState({}, "", newUrl);
     setSearchParams(newParams);
     // Notify the product view to re-fetch data
-    window.dispatchEvent(new CustomEvent('filterchange'));
+    window.dispatchEvent(new CustomEvent("filterchange"));
   };
 
   // Correctly handle multi-select for brands using their slugs
@@ -57,7 +57,9 @@ const ProductFilters = ({
     if (currentBrands.includes(slug)) {
       // If the brand is already selected, remove it
       newParams.delete("b"); // Clear all 'b' params first
-      currentBrands.filter(b => b !== slug).forEach(b => newParams.append("b", b));
+      currentBrands
+        .filter((b) => b !== slug)
+        .forEach((b) => newParams.append("b", b));
     } else {
       // Otherwise, add it
       newParams.append("b", slug);
@@ -130,7 +132,9 @@ const ProductFilters = ({
                   {vendor.vendor} ({vendor.productCount})
                 </span>
                 <div className="h-4 w-4 rounded-sm flex items-center justify-center border border-border dark:border-border/40">
-                  {selectedBrands.includes(vendor.slug) && <BsCheckLg size={16} />}
+                  {selectedBrands.includes(vendor.slug) && (
+                    <BsCheckLg size={16} />
+                  )}
                 </div>
               </li>
             ))}

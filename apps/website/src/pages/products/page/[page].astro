@@ -46,15 +46,21 @@ const { page } = Astro.params;
 const currentPage = parseInt(page || "1");
 
 // Fetch paginated products and other data
-const [productsResult, allCategories, allVendors, allTags, highestPrice, allProducts] =
-  await Promise.all([
-    getProducts({ cursor: currentPage.toString() }),
-    getCollections(),
-    getVendors(),
-    getTags(),
-    getHighestProductPrice(),
-    getAllProducts(), // Still need all products for filter counts
-  ]);
+const [
+  productsResult,
+  allCategories,
+  allVendors,
+  allTags,
+  highestPrice,
+  allProducts,
+] = await Promise.all([
+  getProducts({ cursor: currentPage.toString() }),
+  getCollections(),
+  getVendors(),
+  getTags(),
+  getHighestProductPrice(),
+  getAllProducts(), // Still need all products for filter counts
+]);
 
 const { products, pageInfo, totalPages } = productsResult;
 

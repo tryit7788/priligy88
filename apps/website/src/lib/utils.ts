@@ -66,7 +66,6 @@ export function generatPayloadImageUrl(url: string | null | undefined) {
   }
   const imageUrl = (url: string, opts: any) =>
     `https://wsrv.nl/?${new URLSearchParams({
-
       /* The image URL to optimize */
       url,
 
@@ -83,13 +82,13 @@ export function generatPayloadImageUrl(url: string | null | undefined) {
         Reduce PNG file size.
         See: https://images.weserv.nl/docs/format.html#adaptive-filter
       */
-      af: '',
+      af: "",
 
       /*
         Enable image optimization for GIF and JPEG.
         See: https://images.weserv.nl/docs/format.html#interlace-progressive
       */
-      il: '',
+      il: "",
 
       /*
         Enable image optimization for WebP and GIF.
@@ -103,7 +102,7 @@ export function generatPayloadImageUrl(url: string | null | undefined) {
         
         It's recommended to pass `w` for cutting down the image size.
       */
-      ...opts
-    }).toString()}`
-  return imageUrl(new URL(url, PAYLOAD_SERVER_URL).toString(), {})
+      ...opts,
+    }).toString()}`;
+  return imageUrl(new URL(url, PAYLOAD_SERVER_URL).toString(), {});
 }

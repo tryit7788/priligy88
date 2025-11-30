@@ -159,9 +159,7 @@ export function ProductVariantSelector({
                     </span>
                   </div>
                   {!variant.availableForSale && (
-                    <span className="text-xs text-red-500 ml-2">
-                      (不可用)
-                    </span>
+                    <span className="text-xs text-red-500 ml-2">(不可用)</span>
                   )}
                   {isSelected && (
                     <span className="absolute inset-y-0 right-0 flex items-center pr-4">

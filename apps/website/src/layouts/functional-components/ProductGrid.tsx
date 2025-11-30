@@ -10,15 +10,11 @@ interface ProductComponentProps {
   loading: boolean;
 }
 
-const ProductGrid = ({
-  products,
-  loading
-}: ProductComponentProps) => {
+const ProductGrid = ({ products, loading }: ProductComponentProps) => {
   const { currencySymbol } = config.shopify;
-  const searchValue = new URLSearchParams(window.location.search).get('q');
+  const searchValue = new URLSearchParams(window.location.search).get("q");
 
   const resultsText = products.length > 1 ? "results" : "result";
-
 
   return (
     <div className="px-4">
@@ -27,7 +23,9 @@ const ProductGrid = ({
           {products.length === 0
             ? "There are no products that match "
             : `Showing ${products.length} ${resultsText} for `}
-          <span className="font-bold text-dark dark:text-darkmode-text-dark">&quot;{searchValue}&quot;</span>
+          <span className="font-bold text-dark dark:text-darkmode-text-dark">
+            &quot;{searchValue}&quot;
+          </span>
         </p>
       ) : null}
 
@@ -49,22 +47,23 @@ const ProductGrid = ({
 
       <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
         {products.map((product) => (
-          <div
-            key={product.id}
-            className="text-center group relative"
-          >
+          <div key={product.id} className="text-center group relative">
             <div className="md:relative overflow-hidden">
               <img
                 src={
-                  generatPayloadImageUrl(typeof product.featuredImage !== "number" 
-                    ? product.featuredImage?.url 
-                    : undefined) || "/images/product_image404.jpg"
+                  generatPayloadImageUrl(
+                    typeof product.featuredImage !== "number"
+                      ? product.featuredImage?.url
+                      : undefined,
+                  ) || "/images/product_image404.jpg"
                 }
                 width={312}
                 height={269}
-                alt={typeof product.featuredImage !== "number" 
-                  ? product.featuredImage?.alt 
-                  : product.title}
+                alt={
+                  typeof product.featuredImage !== "number"
+                    ? product.featuredImage?.alt
+                    : product.title
+                }
                 className="w-full h-[200px] sm:w-[312px] md:h-[269px] object-cover rounded-md border border-border mx-auto"
               />
 
@@ -79,12 +78,15 @@ const ProductGrid = ({
                   className="after:absolute after:inset-0"
                   href={`/products/${product.slug}`}
                 >
-                  {product.title}                             
+                  {product.title}
                 </a>
               </h2>
               <div className="flex flex-wrap justify-center items-center gap-x-2 mt-2 md:mt-4">
                 <span className="text-base md:text-xl font-bold text-text-dark dark:text-darkmode-text-dark">
-                  {currencySymbol} {product.discountedPrice ? product.discountedPrice : product.originalPrice}
+                  {currencySymbol}{" "}
+                  {product.discountedPrice
+                    ? product.discountedPrice
+                    : product.originalPrice}
                 </span>
                 {product.discountedPrice && (
                   <s className="text-text-light dark:text-darkmode-text-light text-xs md:text-base font-medium">

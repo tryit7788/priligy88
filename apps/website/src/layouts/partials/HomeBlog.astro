@@ -4,9 +4,9 @@ import dateFormat from "@/lib/utils/dateFormat";
 import { generatPayloadImageUrl } from "@/lib/utils";
 import Button from "@/shortcodes/Button";
 import { payload as _payload } from "@/lib/payload";
-import type {Blog } from "payload_app";
+import type { Blog } from "payload_app";
 const payload = await _payload();
-const {docs:blogs} = await payload.find({
+const { docs: blogs } = await payload.find({
   collection: "blogs",
   depth: 2,
   where: {
@@ -14,9 +14,8 @@ const {docs:blogs} = await payload.find({
       equals: true,
     },
   },
-  sort:"-createdAt"
+  sort: "-createdAt",
 });
-
 ---
 
 <section class="section">
@@ -32,7 +31,11 @@ const {docs:blogs} = await payload.find({
             <div class="lg:flex-col items-center">
               <img
                 class="lg:mr-7 lg:w-full mb-6"
-                src={typeof blog.featuredImage == "number"? undefined : generatPayloadImageUrl(blog?.featuredImage?.url!)}
+                src={
+                  typeof blog.featuredImage == "number"
+                    ? undefined
+                    : generatPayloadImageUrl(blog?.featuredImage?.url!)
+                }
                 alt={blog.title}
                 width={445}
                 height={230}

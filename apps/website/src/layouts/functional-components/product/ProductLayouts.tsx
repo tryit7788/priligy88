@@ -11,12 +11,7 @@ import ProductFilters from "../ProductFilters";
 export type ListItem = SortFilterItem | PathFilterItem;
 export type PathFilterItem = { title: string; path: string };
 
-const ProductLayouts = ({
-  categories,
-  vendors,
-  tags,
-  maxPriceData,
-}: any) => {
+const ProductLayouts = ({ categories, vendors, tags, maxPriceData }: any) => {
   const [isInputEditing, setInputEditing] = useState(false);
   const [isExpanded, setExpanded] = useState(false);
   const [isListView, setIsListView] = useState(false);
@@ -29,7 +24,9 @@ const ProductLayouts = ({
   }, []);
 
   useEffect(() => {
-    const inputField = document.getElementById("searchInput") as HTMLInputElement;
+    const inputField = document.getElementById(
+      "searchInput",
+    ) as HTMLInputElement;
     const params = new URLSearchParams(window.location.search);
     if (isInputEditing || params.get("q")) {
       inputField?.focus();
@@ -88,15 +85,17 @@ const ProductLayouts = ({
                 <div className="flex gap-2">
                   <button
                     onClick={() => layoutChange("card")}
-                    className={`btn border dark:border-darkmode-border ${isListView ? "btn-outline-primary" : "btn-primary"
-                      } p-2 hover:scale-105 duration-300`}
+                    className={`btn border dark:border-darkmode-border ${
+                      isListView ? "btn-outline-primary" : "btn-primary"
+                    } p-2 hover:scale-105 duration-300`}
                   >
                     <BsGridFill />
                   </button>
                   <button
                     onClick={() => layoutChange("list")}
-                    className={`btn border dark:border-darkmode-border ${isListView ? "btn-primary" : "btn-outline-primary"
-                      } p-2 hover:scale-105 duration-300`}
+                    className={`btn border dark:border-darkmode-border ${
+                      isListView ? "btn-primary" : "btn-outline-primary"
+                    } p-2 hover:scale-105 duration-300`}
                   >
                     <FaList />
                   </button>

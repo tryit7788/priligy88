@@ -36,37 +36,40 @@ const SearchBar = () => {
   const updateURL = useCallback((query: string, shouldDebounce = false) => {
     setIsLoading(true);
     const searchParams = new URLSearchParams(window.location.search);
-    
+
     if (query) {
-      searchParams.set('q', query);
+      searchParams.set("q", query);
     } else {
-      searchParams.delete('q');
+      searchParams.delete("q");
     }
 
-    const newURL = createUrl('/products', searchParams);
+    const newURL = createUrl("/products", searchParams);
 
     if (shouldDebounce) {
       if (searchTimeout.current) {
         window.clearTimeout(searchTimeout.current);
       }
       searchTimeout.current = window.setTimeout(() => {
-        window.history.pushState({}, '', newURL);
-        window.dispatchEvent(new Event('popstate'));
+        window.history.pushState({}, "", newURL);
+        window.dispatchEvent(new Event("popstate"));
         setIsLoading(false);
       }, DEBOUNCE_DELAY);
     } else {
-      window.history.pushState({}, '', newURL);
-      window.dispatchEvent(new Event('popstate'));
+      window.history.pushState({}, "", newURL);
+      window.dispatchEvent(new Event("popstate"));
       setIsLoading(false);
     }
   }, []);
 
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    setInputEditing(true);
-    setInputValue(newValue);
-    updateURL(newValue, true);
-  }, [updateURL]);
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newValue = e.target.value;
+      setInputEditing(true);
+      setInputValue(newValue);
+      updateURL(newValue, true);
+    },
+    [updateURL],
+  );
 
   const handleClear = useCallback(() => {
     setInputValue("");
@@ -77,19 +80,22 @@ const SearchBar = () => {
     updateURL("");
   }, [updateURL]);
 
-  const onSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    const form = e.target as HTMLFormElement;
-    const searchInput = form.search as HTMLInputElement;
-    if (searchTimeout.current) {
-      window.clearTimeout(searchTimeout.current);
-    }
-    updateURL(searchInput.value);
-  }, [updateURL]);
+  const onSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      const form = e.target as HTMLFormElement;
+      const searchInput = form.search as HTMLInputElement;
+      if (searchTimeout.current) {
+        window.clearTimeout(searchTimeout.current);
+      }
+      updateURL(searchInput.value);
+    },
+    [updateURL],
+  );
 
   return (
-    <form 
-      onSubmit={onSubmit} 
+    <form
+      onSubmit={onSubmit}
       role="search"
       className="border border-border dark:border-darkmode-border rounded-full flex bg-light/90 dark:bg-dark/10 pl-4 relative"
     >
@@ -118,8 +124,10 @@ const SearchBar = () => {
             <IoClose className="h-4 w-4" aria-hidden="true" />
           </button>
         )}
-        <button type="submit" className="search-icon p-2 m-1 rounded-full"
-           aria-label="Search"
+        <button
+          type="submit"
+          className="search-icon p-2 m-1 rounded-full"
+          aria-label="Search"
           disabled={isLoading}
         >
           <IoSearch className="h-5 w-5" aria-hidden="true" />

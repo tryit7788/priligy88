@@ -28,7 +28,10 @@ const Testimonials = ({
       <div className="container">
         <div className="row">
           <div className="mx-auto mb-12 text-center md:col-10 lg:col-8 xl:col-6">
-            <h2 dangerouslySetInnerHTML={{ __html: markdownify(title) }} className="mb-4" />
+            <h2
+              dangerouslySetInnerHTML={{ __html: markdownify(title) }}
+              className="mb-4"
+            />
             {/* <p
               dangerouslySetInnerHTML={markdownify(
                 data.frontmatter.description!,
@@ -73,7 +76,9 @@ const Testimonials = ({
                     </div>
                     <blockquote
                       className="mt-14 text-center mx-auto md:col-10 lg:col-8 z-10"
-                      dangerouslySetInnerHTML={{ __html: markdownify(item.content) }}
+                      dangerouslySetInnerHTML={{
+                        __html: markdownify(item.content),
+                      }}
                     />
                     <div className="mt-11 flex flex-col items-center">
                       <div className="text-text-dark dark:text-white mb-4">
@@ -87,11 +92,15 @@ const Testimonials = ({
                       </div>
 
                       <h3
-                        dangerouslySetInnerHTML={{ __html: markdownify(item.name) }}
+                        dangerouslySetInnerHTML={{
+                          __html: markdownify(item.name),
+                        }}
                         className="h5 font-primary font-semibold"
                       />
                       <p
-                        dangerouslySetInnerHTML={{ __html: markdownify(item.designation) }}
+                        dangerouslySetInnerHTML={{
+                          __html: markdownify(item.designation),
+                        }}
                         className="text-text-dark dark:text-white"
                       />
                     </div>
@@ -100,10 +109,11 @@ const Testimonials = ({
               ))}
 
               <div
-                className={`hidden lg:flex justify-between w-full absolute top-1/2 z-10 px-6 text-text-dark ${isHovered
-                  ? "opacity-100 transition-opacity duration-300 ease-in-out"
-                  : "opacity-0 transition-opacity duration-300 ease-in-out"
-                  }`}
+                className={`hidden lg:flex justify-between w-full absolute top-1/2 z-10 px-6 text-text-dark ${
+                  isHovered
+                    ? "opacity-100 transition-opacity duration-300 ease-in-out"
+                    : "opacity-0 transition-opacity duration-300 ease-in-out"
+                }`}
               >
                 <div
                   ref={prevRef}

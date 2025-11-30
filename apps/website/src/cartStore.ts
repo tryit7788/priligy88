@@ -118,7 +118,11 @@ export const cartOperations = {
       }),
     });
   },
-  updateQuantity: (id: string | number, quantity: number, variantId?: VariantId) => {
+  updateQuantity: (
+    id: string | number,
+    quantity: number,
+    variantId?: VariantId,
+  ) => {
     const currentCart = cartStore.get();
     if (quantity <= 0) {
       cartStore.set({

@@ -38,20 +38,20 @@ export function ProductVariantManager({
     const fetchVariants = async () => {
       try {
         // console.log(`[ProductVariantManager] Product ID before normalization:`, product.id, `Type:`, typeof product.id);
-        
+
         // Normalize product ID to string (handles MongoDB ObjectIds)
         const productId = normalizeId(product.id);
         // console.log(`[ProductVariantManager] Product ID after normalization:`, productId, `Type:`, typeof productId);
-        
+
         if (!productId) {
           // console.warn("Product ID is missing or invalid");
           setProcessedVariants([]);
           setSelectedVariant(null);
           return;
         }
-        
+
         // console.log(`[ProductVariantManager] Fetching variants for product ID:`, productId);
-        
+
         let response;
         try {
           response = await fetch(`/api/product-variants/${productId}`, {
@@ -60,16 +60,18 @@ export function ProductVariantManager({
           // console.log(`[ProductVariantManager] Fetch response status:`, response.status, response.statusText);
         } catch (error) {
           // console.error(`[ProductVariantManager] Fetch error:`, error);
-          if (error instanceof Error && error.name === 'TimeoutError') {
+          if (error instanceof Error && error.name === "TimeoutError") {
             // console.error(`[ProductVariantManager] Request timed out after 30 seconds`);
           }
           setProcessedVariants([]);
           setSelectedVariant(null);
           return;
         }
-        
+
         if (!response.ok) {
-          const errorText = await response.text().catch(() => 'Unable to read error response');
+          const errorText = await response
+            .text()
+            .catch(() => "Unable to read error response");
           // console.warn(
           //   `Failed to fetch variants for product ${productId}: ${response.status} ${response.statusText}`,
           //   errorText,
@@ -85,7 +87,9 @@ export function ProductVariantManager({
           // console.log(`[ProductVariantManager] Successfully parsed JSON response`);
         } catch (error) {
           // console.error(`[ProductVariantManager] Error parsing JSON response:`, error);
-          const responseText = await response.text().catch(() => 'Unable to read response');
+          const responseText = await response
+            .text()
+            .catch(() => "Unable to read response");
           // console.error(`[ProductVariantManager] Response text:`, responseText);
           setProcessedVariants([]);
           setSelectedVariant(null);
@@ -104,7 +108,7 @@ export function ProductVariantManager({
               // The API returns id as mapping ID and variantId as actual variant ID
               const mappingId = extractMappingId(v); // This is v.id from API
               const variantId = normalizeVariantId(v.variantId); // This is the actual variant ID
-              
+
               const processed = {
                 id: mappingId, // Use mapping ID for validation purposes
                 mappingId: mappingId,
@@ -190,8 +194,11 @@ export function ProductVariantManager({
       ) : (
         <div className="mb-6 text-sm text-gray-500 dark:text-gray-400">
           {/* Debug: Show when no variants */}
-          {process.env.NODE_ENV === 'development' && (
-            <div>No variants available (processedVariants.length = {processedVariants.length})</div>
+          {process.env.NODE_ENV === "development" && (
+            <div>
+              No variants available (processedVariants.length ={" "}
+              {processedVariants.length})
+            </div>
           )}
         </div>
       )}

@@ -12,9 +12,10 @@ export async function populateBlogTags(
 
   // Check if tags are already populated (objects with name) or just IDs (numbers)
   const needsPopulation = blog.tags.some(
-    (tag: any) => typeof tag === "number" || 
-                 typeof tag === "string" ||
-                 (typeof tag === "object" && tag !== null && !tag.name),
+    (tag: any) =>
+      typeof tag === "number" ||
+      typeof tag === "string" ||
+      (typeof tag === "object" && tag !== null && !tag.name),
   );
 
   if (!needsPopulation) {
@@ -36,10 +37,14 @@ export async function populateBlogTags(
         // Handle ObjectId or Buffer (MongoDB)
         if (Buffer.isBuffer(tag)) {
           // Convert Buffer to hex string for MongoDB ObjectId
-          return tag.toString('hex');
+          return tag.toString("hex");
         }
         // Check if it's an ObjectId with toString method
-        if (tag.toString && typeof tag.toString === 'function' && tag._bsontype === 'ObjectId') {
+        if (
+          tag.toString &&
+          typeof tag.toString === "function" &&
+          tag._bsontype === "ObjectId"
+        ) {
           return tag.toString();
         }
         // If object has id property, extract it
@@ -47,15 +52,19 @@ export async function populateBlogTags(
           const id = tag.id;
           // Handle nested ObjectId/Buffer
           if (Buffer.isBuffer(id)) {
-            return id.toString('hex');
+            return id.toString("hex");
           }
-          if (id.toString && typeof id.toString === 'function' && id._bsontype === 'ObjectId') {
+          if (
+            id.toString &&
+            typeof id.toString === "function" &&
+            id._bsontype === "ObjectId"
+          ) {
             return id.toString();
           }
           return id;
         }
         // If the object itself might be an ObjectId
-        if (tag.toString && typeof tag.toString === 'function') {
+        if (tag.toString && typeof tag.toString === "function") {
           const str = tag.toString();
           // Check if it looks like an ObjectId (24 char hex string)
           if (/^[0-9a-fA-F]{24}$/.test(str)) {
@@ -121,12 +130,12 @@ export const getBlogs = async () => {
     sort: "-publishedDate",
     depth: 2,
   });
-  
+
   // Populate tags for all blogs
   const blogsWithTags = await Promise.all(
-    blogs.docs.map((blog) => populateBlogTags(payloadClient, blog))
+    blogs.docs.map((blog) => populateBlogTags(payloadClient, blog)),
   );
-  
+
   return {
     ...blogs,
     docs: blogsWithTags,
@@ -144,14 +153,14 @@ export const getBlog = async (slug: string) => {
     },
     depth: 2,
   });
-  
+
   if (result.docs.length === 0) {
     return result;
   }
-  
+
   // Populate tags for the blog
   const blogWithTags = await populateBlogTags(payloadClient, result.docs[0]);
-  
+
   return {
     ...result,
     docs: [blogWithTags],
