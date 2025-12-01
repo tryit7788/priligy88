@@ -26,7 +26,6 @@ const RangeSlider = ({
   const getMinPrice = searchParams.get("minPrice");
   const getMaxPrice = searchParams.get("maxPrice");
 
-  // Initialize from URL
   useEffect(() => {
     setMinValue(parseInt(getMinPrice || "0"));
     setMaxValue(parseInt(getMaxPrice || maxPriceData?.amount));
@@ -98,14 +97,12 @@ const RangeSlider = ({
   };
 
   function priceChange(min: number, max: number) {
-    // Validate price range
     if (min < 0 || max < min || max > maxAmount) {
       return;
     }
 
     const searchParams = new URLSearchParams(window.location.search);
 
-    // Only set price parameters if they differ from default range
     if (min === 0 && max === maxAmount) {
       searchParams.delete("minPrice");
       searchParams.delete("maxPrice");
@@ -114,11 +111,9 @@ const RangeSlider = ({
       searchParams.set("maxPrice", max.toString());
     }
 
-    const newUrl = createUrl("/products", searchParams);
-    // Use history.pushState for client-side navigation
+    const newUrl = `/products?${searchParams.toString()}`;
     window.history.pushState({}, "", newUrl);
 
-    // Dispatch custom event for client-side updates
     window.dispatchEvent(
       new CustomEvent("filterchange", {
         detail: { params: searchParams },

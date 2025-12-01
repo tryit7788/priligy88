@@ -125,41 +125,38 @@ const {
 
     <script is:inline type="application/ld+json">
       {
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "Organization",
-      "@id": "https://100mg.tw/#organization",
-      "name": "100mg.tw 威而鋼/犀利士/必利勁",
-      "url": "https://100mg.tw/",
-      "logo": {
-        "@type": "ImageObject",
-        "@id": "https://100mg.tw/#logo",
-        "url": "https://100mg.tw/_astro/logo1.gnQTZlMy.png",
-        "caption": "100mg.tw Logo"
-      },
-      "sameAs": [
-        "https://x.com/kt09841"
-      ]
-    },
-    {
-      "@type": "WebSite",
-      "@id": "https://100mg.tw/#website",
-      "url": "https://100mg.tw/",
-      "name": "100mg.tw - 性福藥局-犀利士,必利勁,威而鋼,樂威壯治療早洩陽痿，貨到付款 24H發貨",
-      "description": "性福藥局-線上購犀利士,必利勁,威而鋼,樂威壯等壯陽藥，全站免運費 24H發貨 全家,7-11各門市取貨",
-      "publisher": {
-        "@id": "https://100mg.tw/#organization"
-      },
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": "https://100mg.tw/search?q={search_term_string}",
-        "query-input": "required name=search_term_string"
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://100mg.tw/#organization",
+            "name": "100mg.tw 威而鋼/犀利士/必利勁",
+            "url": "https://100mg.tw/",
+            "logo": {
+              "@type": "ImageObject",
+              "@id": "https://100mg.tw/#logo",
+              "url": "https://100mg.tw/_astro/logo1.gnQTZlMy.png",
+              "caption": "100mg.tw Logo"
+            },
+            "sameAs": ["https://x.com/kt09841"]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://100mg.tw/#website",
+            "url": "https://100mg.tw/",
+            "name": "100mg.tw - 性福藥局-犀利士,必利勁,威而鋼,樂威壯治療早洩陽痿，貨到付款 24H發貨",
+            "description": "性福藥局-線上購犀利士,必利勁,威而鋼,樂威壯等壯陽藥，全站免運費 24H發貨 全家,7-11各門市取貨",
+            "publisher": {
+              "@id": "https://100mg.tw/#organization"
+            },
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": "https://100mg.tw/search?q={search_term_string}",
+              "query-input": "required name=search_term_string"
+            }
+          }
+        ]
       }
-    }
-  ]
-}
-
     </script>
 
     <ClientRouter />

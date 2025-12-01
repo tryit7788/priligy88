@@ -63,7 +63,7 @@ function SortFilterItem({ item }: { item: any }) {
           if (DynamicTag === "a") {
             e.preventDefault();
             window.history.pushState({}, "", href);
-            window.dispatchEvent(new Event("popstate"));
+            window.dispatchEvent(new CustomEvent("filterchange"));
           }
         }}
         className={`w-full pl-4 py-2 ${active ? "bg-dark text-white" : ""}`}

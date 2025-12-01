@@ -54,6 +54,7 @@ export const GET: APIRoute = async ({ params }) => {
           id: { equals: productId },
         },
         // Don't use select - it might be causing issues with relationships
+        depth: 0, // Don't populate variantMappings here, we'll fetch them separately
         limit: 1,
       });
 
@@ -106,10 +107,22 @@ export const GET: APIRoute = async ({ params }) => {
     }
 
     // Get the variant mappings with their associated variants
-    // Normalize mapping IDs to handle Buffer objects (raw MongoDB ObjectIds), ObjectId objects, and string/number IDs
+    // Normalize mapping IDs to handle different database formats:
+    // - PostgreSQL: JSONB array of numbers [1, 2, 3]
+    // - MongoDB: Array of Buffer objects (raw ObjectIds), ObjectId objects, or strings
     const mappingIds = product.variantMappings
       .map((mapping: any) => {
-        // Handle Buffer objects (raw MongoDB ObjectId in binary format)
+        // PostgreSQL: Direct number (most common case)
+        if (typeof mapping === "number") {
+          return mapping;
+        }
+
+        // PostgreSQL/MongoDB: String ID
+        if (typeof mapping === "string") {
+          return mapping;
+        }
+
+        // MongoDB: Handle Buffer objects (raw MongoDB ObjectId in binary format)
         if (Buffer.isBuffer(mapping)) {
           // Convert Buffer to hex string (24 character ObjectId)
           const hexString = mapping.toString("hex");
@@ -141,7 +154,7 @@ export const GET: APIRoute = async ({ params }) => {
               return mapping.id.toString();
             }
             // Already a string or number
-            return String(mapping.id);
+            return mapping.id;
           }
           // Object without id property - might be the ObjectId itself
           if (Buffer.isBuffer(mapping)) {
@@ -154,53 +167,40 @@ export const GET: APIRoute = async ({ params }) => {
             if (/^[0-9a-fA-F]{24}$/.test(str)) {
               return str;
             }
-            // Might be ObjectId.toString() which returns hex
+            // Might be ObjectId.toString() which returns hex or number
             return str;
           }
           return String(mapping);
         }
 
-        // Handle string or number directly
-        return String(mapping);
+        // Fallback
+        return mapping;
       })
       .filter(Boolean);
 
     // console.log(`[API] Extracted ${mappingIds.length} mapping IDs:`, mappingIds);
 
-    // Validate all IDs are 24-character hex strings
-    const invalidIds = mappingIds.filter(
-      (id: string) => !/^[0-9a-fA-F]{24}$/.test(String(id)),
-    );
-    if (invalidIds.length > 0) {
-      // console.error(`[API] Invalid ObjectId formats detected:`, invalidIds);
-      // Filter out invalid IDs to prevent query errors
-      const validIds = mappingIds.filter((id: string) =>
-        /^[0-9a-fA-F]{24}$/.test(String(id)),
-      );
-      // console.log(`[API] Filtered to ${validIds.length} valid ObjectIds`);
-      if (validIds.length === 0) {
-        return new Response(JSON.stringify({ variants: [] }), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-      // Use only valid IDs
-      mappingIds.length = 0;
-      mappingIds.push(...validIds);
-    }
+    // Skip MongoDB-specific ObjectId validation for PostgreSQL compatibility
+    // PostgreSQL uses numeric IDs, MongoDB uses 24-character hex strings
+    // Just ensure we have valid IDs (numbers or strings)
+    const validIds = mappingIds.filter((id: any) => {
+      return id !== null && id !== undefined && String(id).trim() !== "";
+    });
 
-    if (mappingIds.length === 0) {
-      // console.warn(`[API] No mapping IDs found for product ${productId}`);
+    if (validIds.length === 0) {
+      // console.warn(`[API] No valid mapping IDs found for product ${productId}`);
       return new Response(JSON.stringify({ variants: [] }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       });
     }
 
+    // console.log(`[API] Using ${validIds.length} valid mapping IDs:`, validIds);
+
     const mappings = await payloadClient.find({
       collection: "product-variant-mappings",
       where: {
-        id: { in: mappingIds },
+        id: { in: validIds },
         isActive: { equals: true },
       },
       depth: 1, // Populate the variant relationship

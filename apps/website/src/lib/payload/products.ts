@@ -116,6 +116,7 @@ interface ProductQuery {
   brands?: string[];
   search?: string;
   categories?: string[];
+  tags?: string[];
 }
 
 interface ProductsResponse {
@@ -195,6 +196,32 @@ export async function getProducts({
     }
   }
 
+  // If tag slugs are provided, find their IDs first.
+  if (query?.tags && query.tags.length > 0) {
+    const tagDocs = await payloadClient.find({
+      collection: "product-tags",
+      where: {
+        slug: {
+          in: query.tags,
+        },
+      },
+      limit: query.tags.length,
+      select: {
+        slug: true,
+      },
+    });
+
+    const tagIds = tagDocs.docs.map((doc) => doc.id);
+
+    if (tagIds.length > 0) {
+      where.and.push({
+        tags: {
+          in: tagIds,
+        },
+      });
+    }
+  }
+
   // --- Handle Direct Field Queries ---
 
   // Handle price filter
@@ -221,11 +248,17 @@ export async function getProducts({
     where.published = { equals: true };
   }
 
+  // Map 'price' sortKey to 'originalPrice' for database sorting
+  let dbSortKey = sortKey;
+  if (sortKey === "price") {
+    dbSortKey = "originalPrice";
+  }
+
   try {
     const result = await payloadClient.find({
       collection: "products",
       where,
-      sort: `${reverse ? "-" : ""}${sortKey}`,
+      sort: `${reverse ? "-" : ""}${dbSortKey}`,
       depth: 2, // Using depth 2 to populate brand, category, etc.
       limit: 12,
       page: cursor ? parseInt(cursor, 10) : 1, // Use 'page' for pagination

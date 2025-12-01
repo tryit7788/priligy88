@@ -16,11 +16,37 @@ import {
 } from "@/lib/payload/products";
 import CallToAction from "@/partials/CallToAction.astro";
 import type { Brand, Product, ProductCategory, ProductTag } from "payload_app";
+import { sorting, defaultSort } from "@/lib/constants";
 
-// For the index page, we always show page 1
 const currentPage = 1;
 
-// Fetch paginated products and other data
+const searchParams = Astro.url.searchParams;
+const sortSlug = searchParams.get("sort") || "";
+const sortOption = sorting.find((s) => s.slug === sortSlug) || defaultSort;
+const searchQuery = searchParams.get("q") || "";
+const brands = searchParams.getAll("b");
+const category = searchParams.get("c") || "";
+const tag = searchParams.get("t") || "";
+const minPrice = parseFloat(searchParams.get("minPrice") || "0");
+const maxPrice = parseFloat(searchParams.get("maxPrice") || "999999");
+
+const query: any = {};
+if (brands.length > 0) {
+  query.brands = brands;
+}
+if (category) {
+  query.categories = [category];
+}
+if (tag) {
+  query.tags = [tag];
+}
+if (minPrice > 0 || maxPrice < 999999) {
+  query.price = { min: minPrice, max: maxPrice };
+}
+if (searchQuery) {
+  query.search = searchQuery;
+}
+
 const [
   productsResult,
   allCategories,
@@ -29,17 +55,21 @@ const [
   highestPrice,
   allProducts,
 ] = await Promise.all([
-  getProducts({ cursor: currentPage.toString() }),
+  getProducts({
+    cursor: currentPage.toString(),
+    sortKey: sortOption.sortKey,
+    reverse: sortOption.reverse,
+    query: Object.keys(query).length > 0 ? query : undefined,
+  }),
   getCollections(),
   getVendors(),
   getTags(),
   getHighestProductPrice(),
-  getAllProducts(), // Still need all products for filter counts
+  getAllProducts(),
 ]);
 
 const { products, pageInfo, totalPages } = productsResult;
 
-// Calculate counts from all products (for filter counts)
 const vendorsWithCounts = allVendors.map((vendor) => {
   const count = allProducts.filter(
     (p) => (p.brand as Brand)?.id === vendor.id,
@@ -54,7 +84,6 @@ const categoriesWithCounts = allCategories.map((category) => {
   return { name: category.name, slug: category.slug, productCount: count };
 });
 
-// Use tags fetched directly from the collection
 const tags: ProductTag[] = allTags;
 
 const maxPriceData = {
@@ -62,9 +91,6 @@ const maxPriceData = {
   currencyCode: config.shopify.currencyCode,
 };
 
-// totalPages is now provided by the getProducts function from the database
-
-// Tell Astro this is a static page
 export const prerender = false;
 ---
 
@@ -95,7 +121,6 @@ export const prerender = false;
         client:only="react"
       />
 
-      <!-- Pagination -->
       {
         totalPages > 1 && (
           <div class="col-12 mt-8">

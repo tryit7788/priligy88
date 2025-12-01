@@ -13,8 +13,14 @@ const ShowTags = ({ tags }: { tags: ProductTag[] }) => {
       ? `/products?${newParamsString}`
       : "/products";
 
-    window.location.href = newURL.toString();
+    window.history.pushState({}, "", newURL);
     setSearchParams(newParams);
+    // Notify the product view to re-fetch data
+    window.dispatchEvent(
+      new CustomEvent("filterchange", {
+        detail: { params: newParams },
+      }),
+    );
   };
 
   const handleTagClick = (slug: string) => {

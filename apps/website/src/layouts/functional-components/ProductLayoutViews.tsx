@@ -1,6 +1,5 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
 import type { Product } from "payload_app";
-import { useClientFiltering } from "@/lib/hooks/useClientFiltering";
 import React from "react";
 import SkeletonCards from "./loadings/skeleton/SkeletonCards";
 import { useStore } from "@nanostores/react";
@@ -17,11 +16,27 @@ const ProductLayoutViews = ({
   useClientSideFiltering?: boolean;
 }) => {
   const layout = useStore(layoutView);
+  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [loading, setLoading] = useState(false);
 
-  // Use client-side filtering only if explicitly enabled
-  const { products, loading } = useClientSideFiltering
-    ? useClientFiltering(initialProducts)
-    : { products: initialProducts, loading: false };
+  useEffect(() => {
+    const handleFilterChange = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const response = await fetch(`/api/products?${params.toString()}`);
+        const data = await response.json();
+        setProducts(data.products || []);
+      } catch (error) {
+        console.error("Error fetching filtered products:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    window.addEventListener("filterchange", handleFilterChange);
+    return () => window.removeEventListener("filterchange", handleFilterChange);
+  }, []);
 
   return (
     <div className="col-12 lg:col-9">
